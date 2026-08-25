@@ -1,0 +1,7 @@
+# gpu_kwr core runtime
+torch>=2.0
+numpy>=1.24
+
+# graph builders (build/) additionally need:
+#   build_from_cama.py        : numpy only          (CaMa-Flood nextxy.bin maps)
+#   build_multiresolution.py  : pyflwdir, xarray, affine  (MERIT/CaMa ldd upscaling)

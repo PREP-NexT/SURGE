@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "surge-routing"
+version = "0.1.0"
+description = "SURGE: Scalable Upstream-decoupled Routing on GPU-Engine — kinematic-wave river routing via a convergent fixed-point reformulation"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "GPL-3.0-or-later" }
+authors = [{ name = "Zhanwei Liu" }, { name = "Xiaogang He" }]
+dependencies = ["torch>=2.0", "numpy>=1.24"]
+
+[project.urls]
+Repository = "https://github.com/PREP-NexT/SURGE"
+
+[tool.setuptools]
+packages = ["surge"]

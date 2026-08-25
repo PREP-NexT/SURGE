@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below."
+title: "gpu_kwr: GPU-parallel differentiable kinematic-wave river routing"
+authors:
+  - family-names: Liu
+    given-names: Zhanwei
+  - family-names: He
+    given-names: Xiaogang
+repository-code: "https://github.com/Zhanwei-Liu/gpu-kinematic-wave-routing"
+license: GPL-3.0-or-later
+preferred-citation:
+  type: article
+  title: "Parallelizing kinematic-wave river routing on the GPU via a convergent fixed-point reformulation"
+  authors:
+    - family-names: Liu
+      given-names: Zhanwei
+    - family-names: He
+      given-names: Xiaogang
+  year: 2026

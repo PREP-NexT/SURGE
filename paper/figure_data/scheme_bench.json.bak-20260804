@@ -1,0 +1,19 @@
+{"machine":"NVIDIA A100-SXM4-40GB (ASPIRE 2A)","dtype":"float32",
+ "protocol":"per-substep ms; Jacobi k=3 n_newton=4; wavefront eager (O(L) level barriers); serial-C = CWatM t5 kernel, 1 Xeon core",
+ "nodam":[
+  {"res":"30'","N":70648,"levels":116,"wavefront":79.68,"jacobi_eager":1.976,"jacobi_fused":0.1396,"serialC":10.1},
+  {"res":"15'","N":267950,"levels":251,"wavefront":176.00,"jacobi_eager":1.823,"jacobi_fused":0.1775,"serialC":39.3},
+  {"res":"5'","N":2307532,"levels":782,"wavefront":525.27,"jacobi_eager":3.911,"jacobi_fused":0.5465,"serialC":387.0},
+  {"res":"3'","N":6222566,"levels":1436,"wavefront":997.17,"jacobi_eager":12.80,"jacobi_fused":1.427,"serialC":1432.7},
+  {"res":"1'","N":55812946,"levels":4696,"wavefront":3234.12,"jacobi_eager":107.2,"jacobi_fused":12.381,"serialC":12931.0}
+ ],
+ "withdam":[
+  {"res":"5'","N":2307532,"levels":782,"nres":6504,"wavefront":582.77,"jacobi_eager":4.175,"jacobi_fused":0.559},
+  {"res":"3'","N":6222566,"levels":1436,"nres":6966,"wavefront":1055.51,"jacobi_eager":13.31,"jacobi_fused":1.466},
+  {"res":"1'","N":55812946,"levels":4696,"nres":7269,"wavefront":3498.23,"jacobi_eager":111.15,"jacobi_fused":12.80}
+ ],
+ "dam_source":"GRanD v1.3 via GeoDAR (7,320 dams, 6,881 km3), snapped to largest-river cell",
+ "accuracy_5min_bigriver_relerr":{
+   "with_dams":{"1":0.02333,"2":0.02268,"3":0.02192,"5":0.02009},
+   "without_dams":{"1":0.02341,"2":0.02287,"3":0.02224,"5":0.02074}}
+}

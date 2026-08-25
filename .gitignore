@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.venv*/
+.ipynb_checkpoints/
+
+# data & compiled kernels are NOT tracked (build locally / obtain from CWatM)
+*.npz
+*.npy
+*.nc
+*.bin
+*.so
+*.pt
+*.tif
+
+# ...except the compact data & figures that reproduce the paper's figures
+!paper/figure_data/*.npz
+!paper/figure_data/*.json
+!paper/figures/*.png
