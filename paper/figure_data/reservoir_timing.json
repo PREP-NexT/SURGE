@@ -1,0 +1,47 @@
+{
+ "protocol": "bench_unified_timing.py (2026-09-14/15): uniform runoff 2 mm/day, steady state of that forcing shared by all configurations, 10 warm-up steps then the mean over 600 routing time steps (one month), Jacobi k=3, 4 Newton steps; SURGE compiled with torch.compile; CPU-parallel on 24 threads; serial = CWatM t5 C++ kernel on one core",
+ "machine": "NVIDIA A100-SXM4-40GB on a whole ASPIRE 2A node",
+ "note": "SURGE is timed at the iteration count each river network needs (field k); GPU-ordered does not iterate. Unified protocol, exclusive A100 node, 2026-09-19. The k = 3 version is kept as reservoir_timing.json.bak_20260919_k3.",
+ "source": "timing_unified/aspire_excl (PBS job 20558983)",
+ "rows": {
+  "5'": {
+   "surge": {
+    "none": 1.3002,
+    "dams": 1.3938,
+    "k": 7
+   },
+   "gpu_ordered": {
+    "none": 468.3235,
+    "code_only": 486.2107,
+    "dams": 493.997
+   },
+   "reservoir_cells": 6501
+  },
+  "3'": {
+   "surge": {
+    "none": 5.266,
+    "dams": 5.6081,
+    "k": 11
+   },
+   "gpu_ordered": {
+    "none": 867.5185,
+    "code_only": 891.3742,
+    "dams": 896.432
+   },
+   "reservoir_cells": 6966
+  },
+  "1'": {
+   "surge": {
+    "none": 123.6413,
+    "dams": 130.8675,
+    "k": 30
+   },
+   "gpu_ordered": {
+    "none": 2819.6273,
+    "code_only": 2965.0027,
+    "dams": 2955.4145
+   },
+   "reservoir_cells": 7270
+  }
+ }
+}

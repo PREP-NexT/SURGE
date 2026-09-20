@@ -1,0 +1,65 @@
+{
+ "machine": "GPU: NVIDIA A100-SXM4-40GB on a whole ASPIRE 2A node; CPU: AMD EPYC 7713 on a whole ASPIRE 2A node",
+ "dtype": "float32 on GPU and CPU-parallel, float64 in the serial C++ kernel",
+ "protocol": "bench_unified_timing.py (2026-09-14/15): uniform runoff 2 mm/day, steady state of that forcing shared by all configurations, 10 warm-up steps then the mean over 600 routing time steps (one month), Jacobi k=3, 4 Newton steps; SURGE compiled with torch.compile; CPU-parallel on 24 threads; serial = CWatM t5 C++ kernel on one core",
+ "source": "paper1_gpu_routing/global_results/timing_unified/{aspire_excl,aspire_cpu_excl} (PBS jobs 20558983, 20558985)",
+ "supersedes": "the hand-collected Intel Xeon w7-3455 / shared-A100 table of global_results/README.md (backup resolution_scaling.json.bak-20260915) | the k = 3 version of 2026-09-15, kept as resolution_scaling.json.bak_20260919_k3",
+ "rows": [
+  {
+   "res": "30'",
+   "N": 70648,
+   "levels": 116,
+   "k": 2,
+   "serialC": 16.372,
+   "cpu_parallel": 4.948,
+   "gpu_ordered": 69.676,
+   "surge": 0.0941,
+   "surge_k3": 0.1177
+  },
+  {
+   "res": "15'",
+   "N": 267950,
+   "levels": 251,
+   "k": 3,
+   "serialC": 62.831,
+   "cpu_parallel": 11.171,
+   "gpu_ordered": 151.575,
+   "surge": 0.1183,
+   "surge_k3": 0.1183
+  },
+  {
+   "res": "5'",
+   "N": 2307532,
+   "levels": 782,
+   "k": 7,
+   "serialC": 629.835,
+   "cpu_parallel": 97.4371,
+   "gpu_ordered": 468.323,
+   "surge": 1.3002,
+   "surge_k3": 0.5833
+  },
+  {
+   "res": "3'",
+   "N": 6222566,
+   "levels": 1436,
+   "k": 11,
+   "serialC": 1796.226,
+   "cpu_parallel": 507.9612,
+   "gpu_ordered": 867.518,
+   "surge": 5.266,
+   "surge_k3": 1.4713
+  },
+  {
+   "res": "1'",
+   "N": 55812946,
+   "levels": 4696,
+   "k": 30,
+   "serialC": 16929.686,
+   "cpu_parallel": 17742.3431,
+   "gpu_ordered": 2819.627,
+   "surge": 123.6413,
+   "surge_k3": 12.3651
+  }
+ ],
+ "note": "SURGE and CPU-parallel are timed at the iteration count each river network needs to match the serial solution (field k); CPU-serial and GPU-ordered do not iterate. SURGE and CPU-parallel from timing_unified/aspire_sweeps and aspire_cpu_sweeps (2026-09-19), the other two from the earlier run of the same protocol on the same nodes. The field surge_k3 is the same protocol at a fixed three iterations, for the comparison in panel b."
+}
