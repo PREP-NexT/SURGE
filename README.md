@@ -10,14 +10,14 @@ is updated at once, and a fixed, small number of iterations reproduces the
 serial solution.
 
 - The per-iteration contraction is `g = Cr / (1 + Cr)`, set by the local
-  Courant number `Cr`, so about three iterations suffice in the operational
-  regime and the count is independent of network depth (116 to 4,696
-  topological levels).
-- One NVIDIA A100 routes the 56-million-cell global 1 arc-minute network up to
-  **1,046x** faster than the serial C kernel on one CPU core; a global
-  model-year routes in about 90 seconds instead of 26 hours.
+  Courant number `Cr`, so the iterations a network needs follow that number,
+  two on the global 30 arc-minute network and thirty on the 1 arc-minute one.
+- One NVIDIA A100 routes the global networks **137 to 531 times** faster than
+  the serial C kernel on one CPU core. A simulated year of the 56-million-cell
+  1 arc-minute network takes about 15 minutes instead of about 34 hours.
 - Managed reservoirs (the full GRanD set) are carried as storage-based fixed
-  sources at about 3% extra cost per substep.
+  sources, which costs six to seven per cent more time and no extra
+  iterations.
 - Every operation is a tensor primitive, so the solver batches over ensembles;
   being built from differentiable operations, it also supports reverse-mode
   autograd.
@@ -31,8 +31,7 @@ modification.
 This repository accompanies the manuscript:
 
 > Zhanwei Liu and Xiaogang He.
-> **GPU-accelerated kinematic-wave river routing via a convergent fixed-point
-> reformulation** (in preparation).
+> **SURGE: a GPU-parallel kinematic-wave river routing model** (in preparation).
 > Department of Civil and Environmental Engineering, National University of
 > Singapore.
 
@@ -101,8 +100,8 @@ N  = net.n_cells
 q  = torch.zeros(N, device="cuda")                    # discharge state
 qd = torch.full((N,), 1e-4, device="cuda")            # lateral inflow (m^2/s)
 
-# one routing substep: three network-wide fixed-point iterations
-q = router.substep_jacobi(q, qd, sweeps=3, n_newton=4)
+# one routing time step, the iterations the network needs (seven at 5 arc-minutes)
+q = router.substep_jacobi(q, qd, sweeps=7, n_newton=4)
 
 # exact level-scheduled traversal (machine-precision reference)
 q_exact = router.substep_wavefront(q, qd)
@@ -140,28 +139,33 @@ python examples/bench_cpu_parallel.py net.npz 24              # CPU baseline
 ### 3. Reproduce the paper figures
 
 ```bash
-python paper/figure_scripts/fig_method.py      # and the other fig_*.py
+cd paper/figure_scripts
+python fig_timing_bars.py                      # and the other fig_*.py
 ```
 
-Measured benchmark data used by the figures are stored in
-`paper/figure_data/`.
+Each figure of the manuscript has one script and the measured data it reads, in
+`paper/figure_data/`. See [paper/README.md](paper/README.md) for the figure,
+script and data of each one.
 
 ## Key results
 
-Single-run speedup of one NVIDIA A100 over the serial C kernel on one CPU
-core, across the global river network (three fixed-point iterations,
-torch.compile-fused):
+Single-run wall-clock per simulated day of one NVIDIA A100 against the serial
+C kernel on one core of an AMD EPYC 7713, over the global river network. Each
+network runs at the number of iterations `k` it needs to reproduce the serial
+solution, and a simulated day is 20 routing time steps of 4,320 s:
 
-| Resolution | Cells | Levels | Fused / substep | Speedup |
-|-----------:|------:|-------:|----------------:|--------:|
-| 30 arc-min | 70,648 | 116 | 0.137 ms | 74x |
-| 15 arc-min | 267,950 | 251 | 0.149 ms | 264x |
-| 5 arc-min | 2,307,532 | 782 | 0.550 ms | 704x |
-| 3 arc-min | 6,222,566 | 1,436 | 1.419 ms | 1,010x |
-| **1 arc-min** | **55,812,946** | **4,696** | **12.367 ms** | **1,046x** |
+| Resolution | Cells | Levels | `k` | SURGE | CPU-serial | Speedup |
+|-----------:|------:|-------:|----:|------:|-----------:|--------:|
+| 30 arc-min | 70,648 | 116 | 2 | 1.88 ms | 327 ms | 174x |
+| **15 arc-min** | **267,950** | **251** | **3** | **2.37 ms** | **1.26 s** | **531x** |
+| 5 arc-min | 2,307,532 | 782 | 7 | 26.0 ms | 12.6 s | 484x |
+| 3 arc-min | 6,222,566 | 1,436 | 11 | 105 ms | 35.9 s | 341x |
+| 1 arc-min | 55,812,946 | 4,696 | 30 | 2.47 s | 339 s | 137x |
 
-At a matched Courant number the three-iteration error does not grow across
-the forty-fold range of network depth.
+The speedup peaks at the middle resolutions. A coarse network gives the card
+too little work to cover the cost of starting each update, and a fine one needs
+more iterations, thirty against two, because a flood wave crosses more cells in
+one time step.
 
 ## License
 
