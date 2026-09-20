@@ -93,5 +93,6 @@
    "5": 0.0119
   }
  },
- "accuracy_note": "accuracy re-measured 2026-08-04, RTX A6000, torch 2.5.1+cu121, time-varying-forcing loop (bench_reservoir.py at HEAD), reservoir lateral-inflow q*dx fix applied; supersedes the constant-forcing spin-up numbers; timing entries unchanged (ASPIRE A100)."
+ "accuracy_note": "accuracy re-measured 2026-08-04, RTX A6000, torch 2.5.1+cu121, time-varying-forcing loop (bench_reservoir.py at HEAD), reservoir lateral-inflow q*dx fix applied; supersedes the constant-forcing spin-up numbers; timing entries unchanged (ASPIRE A100).",
+ "jacobi_fused_note": "2026-09-14: jacobi_fused and jacobi_eager here come from the wavefront benchmark session and differ from the resolution-scaling runs by up to 19% (15'). The paper takes the SURGE timings from resolution_scaling.json everywhere; from this file it uses only wavefront, serialC, and the with/without-dam ratio of the same session. Not superseded, kept as measured."
 }

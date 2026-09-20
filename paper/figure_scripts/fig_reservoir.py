@@ -9,9 +9,11 @@ import matplotlib; matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
-    from paper_style import setup_paper_style; setup_paper_style(base_size=8.0)
+    from paper_style import setup_paper1_style, panel_label; setup_paper1_style()
 except Exception as e:
     print('paper_style unavailable:', e)
+# built at the text width, so the sizes set in paper_style are the sizes that print
+PW = 166.0 / 25.4
 _HERE = os.path.dirname(os.path.abspath(__file__))
 FIG = os.path.join(_HERE, '..', 'figures'); os.makedirs(FIG, exist_ok=True)
 DATA = os.path.join(_HERE, '..', 'figure_data')
@@ -27,34 +29,59 @@ wfA = np.array([A[r]['wavefront'] for r in order]); jeA = np.array([A[r]['jacobi
 jfA = np.array([A[r]['jacobi_fused'] for r in order])
 C_WF = '#D55E00'; C_JE = '#E69F00'; C_JF = '#0072B2'
 
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.9, 3.15))
-# (a) per-substep cost WITH reservoirs (solid) vs without (faint) -- three schemes
-ax1.loglog(cells, wfB, 's-', color=C_WF, lw=1.3, ms=5, label='GPU-wavefront + dams')
-ax1.loglog(cells, jeB, 'o-', color=C_JE, lw=1.2, ms=4.5, label='GPU-eager + dams')
-ax1.loglog(cells, jfB, 'o-', color=C_JF, lw=1.4, ms=5.5, label='GPU-fused + dams')
-ax1.loglog(cells, wfA, 's:', color=C_WF, lw=1.0, ms=3, alpha=0.5)
-ax1.loglog(cells, jeA, 'o:', color=C_JE, lw=1.0, ms=3, alpha=0.5)
-ax1.loglog(cells, jfA, 'o:', color=C_JF, lw=1.0, ms=3, alpha=0.5, label='Same, no dams (faint)')
-ax1.annotate('%.0f$\\times$' % (wfB[-1] / jfB[-1]), (cells[-1], (wfB[-1] * jfB[-1]) ** 0.5),
-             fontsize=7.5, color=C_WF, ha='right', fontweight='bold')
-for x, y, r in zip(cells, jfB, order):
-    ax1.annotate(r, (x, y), textcoords='offset points', xytext=(3, -10), fontsize=7.0, color=C_JF)
-ax1.set_xlabel('River cells in global network'); ax1.set_ylabel('Wall-clock per substep [ms]')
-ax1.set_title('(a) Reservoirs add a few per cent to the cost')
-ax1.legend(loc='center left'); ax1.grid(False, which='both')
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(PW, 2.42 * PW / 5.3))
+# (a) what the dams actually cost: percentage added, per scheme and resolution
+RT = json.load(open(os.path.join(DATA, 'reservoir_timing.json')))['rows']
+schemes = [('gpu_ordered', C_WF, 'GPU-ordered'),
+           ('surge', C_JF, 'SURGE')]
+xpos = np.arange(len(order)); w = 0.34
+for s, (key, col, lab) in enumerate(schemes):
+    tot = [100.0 * (RT[r][key]['dams'] / RT[r][key]['none'] - 1.0) for r in order]
+    xb = xpos + (s - 0.5) * w
+    ax1.bar(xb, tot, width=w, color=col, edgecolor='k', linewidth=0.5, label=lab, zorder=3)
+    for x, v in zip(xb, tot):
+        ax1.annotate('%.1f' % v, (x, v), textcoords='offset points', xytext=(0, 3),
+                     ha='center', va='bottom', fontsize=8.0, color='0.25')
+ax1.axhline(0, color='k', lw=0.7, zorder=2)
+ax1.set_xticks(xpos)
+ax1.set_xticklabels(['5 arcmin\n$k$ = %d' % RT["5'"]['surge']['k'],
+                     '3 arcmin\n$k$ = %d' % RT["3'"]['surge']['k'],
+                     '1 arcmin\n$k$ = %d' % RT["1'"]['surge']['k']])
+ax1.set_ylabel('Increase in wall-clock with the dams [%]')
+ax1.set_ylim(0, 12)
+panel_label(ax1, 'a'); ax1.set_title('Dams add six to seven per cent to SURGE')
+ax1.legend(loc='upper center', ncol=2, fontsize=8.0, handlelength=1.4, handletextpad=0.5,
+           columnspacing=1.0, borderpad=0.3, framealpha=0.9, facecolor='white', edgecolor='none')
+ax1.grid(False, which='both')
 
-# (b) accuracy: Jacobi vs exact wavefront, with vs without reservoirs (5-arcmin)
-acc = J['accuracy_5min_bigriver_relerr']
-ks = [1, 2, 3, 5]
-ax2.plot(ks, [acc['with_dams'][str(k)] * 100 for k in ks], 'o-', color='#0072B2', lw=1.4, ms=5.5, label='With GRanD dams')
-ax2.plot(ks, [acc['without_dams'][str(k)] * 100 for k in ks], 's--', color='0.5', lw=1.1, ms=4, label='Without dams')
-ax2.set_xlabel('Jacobi iterations $k$'); ax2.set_ylabel('Median $E^{\mathrm{rel}}_{c,k}$ over mainstem cells [%]')
-ax2.set_xticks(ks)
-ax2.set_title('(b) Reservoirs do not change convergence')
-ax2.legend(); ax2.grid(False, which='both')
-ax2.text(0.5, 0.06, 'GPU-eager reproduces GPU-wavefront\nwith dams active',
-         transform=ax2.transAxes, fontsize=7.0, ha='center', color='#444', style='italic')
+# (b) the criterion of section 4.1 with and without the dams, over the 2010 year
+CV = json.load(open(os.path.join(DATA, 'reservoir_convergence.json')))
+THRESH = 0.01                                  # 1 - KGE at the 5th percentile, the threshold
+for key, col, mk, lab, off, ha_ in (('without_dams', '0.5', 's--', 'SURGE without dams', (7, 0), 'left'),
+                                    ('with_dams', '#0072B2', 'o-', 'SURGE with dams',
+                                     (-4, -10), 'right')):
+    d = CV[key]
+    ks_ = sorted((int(k) for k in d), key=int)
+    ks_ = [k for k in ks_ if k <= 12]
+    ax2.plot(ks_, [max(d[str(k)]['p5'], 1e-7) for k in ks_], mk, color=col, lw=1.2, ms=4,
+             markeredgecolor='k', markeredgewidth=0.4, label=lab)
+    cross = next((k for k in ks_ if d[str(k)]['p5'] <= THRESH), None)
+    if cross is not None:
+        ax2.annotate('$k$ = %d' % cross, xy=(cross, d[str(cross)]['p5']), xytext=off,
+                     textcoords='offset points', ha=ha_, va='center', fontsize=8.0, color=col)
+ax2.axhline(THRESH, color='#d1441f', lw=0.8, ls=(0, (4, 2)), zorder=1)
+ax2.text(12.4, THRESH * 1.12, 'Threshold, $\\mathrm{KGE}_c \\geq 0.99$\n'
+         'at 95% of cells', fontsize=7.5, color='#d1441f', ha='right', va='bottom',
+         linespacing=1.25)      # above the line and right of where the curves cross it
+ax2.set_yscale('log')
+ax2.set_xlabel('The number of Jacobi iterations $k$')
+ax2.set_ylabel('1 $-$ KGE$_c$ at the 5th percentile')
+ax2.set_xticks([1, 3, 5, 7, 9, 11]); ax2.set_xlim(0.5, 12.5); ax2.set_ylim(8e-4, 1.0)
+panel_label(ax2, 'b'); ax2.set_title('Reservoirs do not change convergence')
+ax2.legend(loc='upper right', fontsize=8.0, labelspacing=0.35, borderpad=0.45, handlelength=1.6,
+           handletextpad=0.5, framealpha=0.85, facecolor='white', edgecolor='none')
+ax2.grid(False, which='both')
 
 fig.savefig(os.path.join(FIG, 'fig_reservoir.png'), dpi=600); fig.savefig(os.path.join(FIG, 'fig_reservoir.pdf'))
 print('wrote fig_reservoir.png')
-print('reservoir overhead (fused):', {r: round(B[r]['jacobi_fused'] / A[r]['jacobi_fused'], 3) for r in order})
+print('reservoir overhead, SURGE:', {r: round(RT[r]['surge']['dams'] / RT[r]['surge']['none'], 3) for r in order})

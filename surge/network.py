@@ -17,7 +17,23 @@ import numpy as np
 
 
 class RoutingNetwork:
-    def __init__(self, npz_path, use_lr=False):
+    """A routing graph and its channel geometry, read from a builder's npz.
+
+    Parameters
+    ----------
+    npz_path : str
+        Archive written by one of the builders in ``build/``.
+    use_lr : bool
+        Read the low-resolution variant of the traversal arrays, where present.
+    substep_seconds : float, optional
+        Length of one routing substep. The archive carries the value the builder
+        chose, and overriding it here is the whole of what it takes to change the
+        time step: the graph and the channel geometry do not depend on it. Set it
+        to divide the interval the runoff is written at, so 3600 for hourly
+        forcing and 4320 for the twenty-a-day default.
+    """
+
+    def __init__(self, npz_path, use_lr=False, substep_seconds=None):
         d = np.load(npz_path)
         suf = '_LR' if use_lr else ''
         self.dirDown = d['dirDown' + suf].astype(np.int64)
@@ -29,6 +45,9 @@ class RoutingNetwork:
         self.chanLength = d['chanLength'].astype(np.float64)
         self.dtRouting = float(d['dtRouting'])
         self.noRoutingSteps = int(d['noRoutingSteps'])
+        if substep_seconds is not None:
+            self.dtRouting = float(substep_seconds)
+            self.noRoutingSteps = int(round(86400.0 / self.dtRouting))
         self.cellArea = d['cellArea'].astype(np.float64)
         self.mask2d = d['mask2d']
         self.n_cells = int(d['mapC'])

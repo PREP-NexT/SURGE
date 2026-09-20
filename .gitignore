@@ -17,3 +17,7 @@ __pycache__/
 !paper/figure_data/*.npz
 !paper/figure_data/*.json
 !paper/figures/*.png
+
+# local backups and trial renders are never committed
+*.bak*
+_trial_*

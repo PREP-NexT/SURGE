@@ -72,7 +72,7 @@ draw(axes[0], c_serial, '(a) Serial scheme',
 
 # (b) wavefront: number = level = the step; same-level cells share a step; colour banded by level
 lab_wave = {n: str(nodes[n][2]) for n in nodes}   # level 1 (headwaters) first ... level L (outlet) last
-draw(axes[1], c_wave, '(b) Wavefront scheme',
+draw(axes[1], c_wave, '(b) Order-based parallel scheme',
      'One level at a time\n$L$ level steps',
      'Number = compute order (by level)', labels=lab_wave)
 

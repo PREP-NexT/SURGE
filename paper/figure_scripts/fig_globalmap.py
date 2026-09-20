@@ -31,7 +31,7 @@ medabs = float(np.median(np.abs(ours / cwat - 1)))
 halo = [pe.withStroke(linewidth=1.6, foreground='white')]
 
 proj = ccrs.PlateCarree()
-fig = plt.figure(figsize=(7.8, 2.4))
+fig = plt.figure(figsize=(5.3, 2.05))
 
 # ---- (a) map: TRUE aspect (no stretch); fills width, letterbox cropped by tight bbox ----
 axm = fig.add_axes([0.04, 0.05, 0.52, 0.86], projection=proj)
@@ -72,24 +72,12 @@ axs.text(0.80e5, 0.80e5 * 1.2 * 1.06, '+20%', fontsize=6.2, color='grey',
          rotation=45, ha='center', va='bottom', path_effects=_ref_halo, zorder=5)
 axs.text(1.30e5, 1.30e5 * 0.8 * 0.94, '−20%', fontsize=6.2, color='grey',
          rotation=45, ha='center', va='top', path_effects=_ref_halo, zorder=5)
-# labels sit off the crowded diagonal: even indices to the upper-left triangle,
-# odd to the lower-right, each with a thin leader and a white halo so they never
-# overlap a marker or each other (points are monotonic along the diagonal).
-_txt_halo = [pe.withStroke(linewidth=1.6, foreground='white')]
-for i in range(len(rows)):
-    if i % 2 == 0:
-        dx, dy, ha, va = -12, 10, 'right', 'bottom'
-    else:
-        dx, dy, ha, va = 12, -10, 'left', 'top'
-    axs.annotate(LAB[i], (cwat[i], ours[i]), textcoords='offset points', xytext=(dx, dy),
-                 fontsize=6.6, fontweight='bold', color='#222', ha=ha, va=va, zorder=4,
-                 path_effects=_txt_halo,
-                 arrowprops=dict(arrowstyle='-', lw=0.5, color='#9aa0a6',
-                                 shrinkA=0.0, shrinkB=0.0))   # leader reaches the marker centre
-axs.set_xlim(8.5e3, 2.3e5); axs.set_ylim(8.5e3, 2.3e5)
+# the twelve points carry no numbers here: panel (a) and the caption already
+# identify them, and twelve leaders on this diagonal only add clutter
+axs.set_xlim(7.0e3, 2.9e5); axs.set_ylim(7.0e3, 2.9e5)   # margin so edge labels stay inside
 axs.set_xlabel('CWatM discharge [m$^3$ s$^{-1}$]')
-axs.set_ylabel('GPU-eager discharge [m$^3$ s$^{-1}$]')
-axs.set_title('(b) The median $E^{\mathrm{mouth}}_r$ is %.0f%%' % (100*medabs))
+axs.set_ylabel('GPU-uncompiled discharge [m$^3$ s$^{-1}$]')
+axs.set_title('(b) The median difference is %.0f%%' % (100*medabs))
 axs.tick_params(labelsize=7.0)
 
 # PNG only: dense 5e4-point global scatter is inherently raster; vector PDF

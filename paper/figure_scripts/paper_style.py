@@ -29,9 +29,21 @@ GOOD      = "#2E7D5B"     # green
 MUTED     = "#8895A3"     # grey
 PANEL_BG  = "#E8EEF5"     # light panel backdrop for multi-panel figures
 
-# perceptually-uniform colormaps used throughout (sequential + diverging)
+# perceptually-uniform colormaps used throughout (sequential + diverging).
+# Never a rainbow map.
 SEQ_CMAP = "viridis"
 DIV_CMAP = "RdBu_r"
+
+# Colour-blind-safe categorical order (Okabe & Ito). The first three entries are
+# what most panels use, and vermillion/bluish-green stay separable under
+# deuteranopia in a way that pure red against green does not.
+CB_BLUE   = "#0072B2"
+CB_VERM   = "#D55E00"
+CB_GREEN  = "#009E73"
+CB_ORANGE = "#E69F00"
+CB_PURPLE = "#CC79A7"
+CB_GREY   = "#8895A3"
+CATEGORICAL = [CB_BLUE, CB_VERM, CB_GREEN, CB_ORANGE, CB_PURPLE, CB_GREY]
 
 CM2INCH = 1.0 / 2.54
 WIDTH_SINGLE_IN = 8.5 * CM2INCH
@@ -62,15 +74,15 @@ def setup_paper_style(base_size: float = 8.0) -> None:
     _register_myriad()
     plt.rcdefaults()
     mpl.rcParams.update({
-        # paper1 figures: serif text matching the manuscript body (Palatino via
-        # TeX Gyre Pagella) with Computer Modern mathtext, so figure lettering
-        # matches the LaTeX text and equations exactly.
-        "font.family":     "serif",
-        "font.serif":      ["TeX Gyre Pagella", "P052", "DejaVu Serif"],
-        "mathtext.fontset": "cm",
+        # paper1 figures: sans-serif lettering (Myriad Pro) for accessibility,
+        # per the figure guidance adopted 2026-08-26. Mathtext uses a sans face
+        # so symbols in axis labels match the surrounding text.
+        "font.family":      "sans-serif",
+        "font.sans-serif":  ["Myriad Pro", "Lato", "DejaVu Sans"],
+        "mathtext.fontset": "stixsans",
 
         "font.size":        base_size,
-        "axes.titlesize":   base_size + 1,
+        "axes.titlesize":   8.4,        # matches Figure 1/2 panel titles
         "axes.labelsize":   base_size,
         "xtick.labelsize":  base_size - 1,
         "ytick.labelsize":  base_size - 1,
@@ -92,7 +104,7 @@ def setup_paper_style(base_size: float = 8.0) -> None:
         "axes.spines.top":   False,
         "axes.spines.right": False,
         "axes.titlelocation": "left",
-        "axes.titleweight":  "bold",
+        "axes.titleweight":  "normal",  # Figure 1/2 use unbolded panel titles
         "axes.titlepad":     4.0,
         "xtick.major.width": 0.6,
         "ytick.major.width": 0.6,
@@ -121,8 +133,7 @@ def setup_paper_style(base_size: float = 8.0) -> None:
         "savefig.dpi":   300,
         "savefig.bbox":  "standard",   # constrained layout handles spacing
         "figure.facecolor": "white",
-        "axes.prop_cycle": mpl.cycler(color=[
-            ACCENT, SIM_COLOR, GOOD, ACCENT2, "#6A4C93", MUTED]),
+        "axes.prop_cycle": mpl.cycler(color=CATEGORICAL),
     })
 
 
@@ -138,3 +149,40 @@ def finish(fig, out_paths, dpi=300):
         out_paths = [out_paths]
     for p in out_paths:
         fig.savefig(p, dpi=dpi)
+
+
+# ---- paper1 --------------------------------------------------------------------------
+# Paper1 figures are built at the 166 mm text width, so a size set here is the size that
+# prints. Words stay in Myriad Pro and equations are set in STIX, as in Figure 2, so a
+# symbol in a figure looks the way it does in the text. Sizes follow
+# paper1_gpu_routing/画图规范与经验.md: 8 pt for ticks, axis labels and legends, 9 pt for
+# titles inside a figure, and nothing smaller than 8 pt.
+PRINT_WIDTH_IN = 166.0 / 25.4
+
+
+def setup_paper1_style() -> None:
+    setup_paper_style(base_size=8.0)
+    mpl.rcParams.update({
+        "mathtext.fontset":      "stix",
+        "font.size":             8.0,
+        "axes.labelsize":        8.0,
+        "axes.titlesize":        9.0,
+        "xtick.labelsize":       8.0,
+        "ytick.labelsize":       8.0,
+        "legend.fontsize":       8.0,
+        "legend.title_fontsize": 8.0,
+        "figure.titlesize":      9.0,
+    })
+
+
+def panel_label(ax, letter, pad_pt=None, gap_mm=1.2):
+    """Panel letter per paper1_gpu_routing/画图规范与经验.md section 4: bold 10 pt lower case,
+    outside the frame at its top left. It sits on the baseline of the axes title, its right
+    edge a small gap left of the frame, so the title keeps its place over the frame and no
+    data moves. It is anchored to the axes, so a constrained layout makes room for it."""
+    if pad_pt is None:
+        pad_pt = mpl.rcParams["axes.titlepad"]
+    return ax.annotate(letter, xy=(0, 1), xycoords="axes fraction",
+                       xytext=(-gap_mm * 72.0 / 25.4, pad_pt), textcoords="offset points",
+                       ha="right", va="baseline", fontsize=10.0, fontweight="bold",
+                       annotation_clip=False)
