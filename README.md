@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/PREP-NexT/SURGE">
-    <img src="logo/surge_logo.svg" width="550" alt="SURGE logo">
+    <img src="logo/surge_logo.svg" width="420" alt="SURGE logo">
   </a>
 </p>
 
@@ -54,15 +54,18 @@ This repository accompanies the manuscript:
 
 ## Table of contents
 
-- [Installation](#installation)
-- [Project layout](#project-layout)
-- [Quick start](#quick-start)
-- [Workflow](#workflow)
-  - [1. Build a routing network](#1-build-a-routing-network)
-  - [2. Route and benchmark](#2-route-and-benchmark)
-  - [3. Reproduce the paper figures](#3-reproduce-the-paper-figures)
-- [Key results](#key-results)
-- [License](#license)
+- [SURGE: Scalable Upstream-decoupled Routing on GPU-Engine](#surge-scalable-upstream-decoupled-routing-on-gpu-engine)
+  - [Citation](#citation)
+  - [Table of contents](#table-of-contents)
+  - [Installation](#installation)
+  - [Project layout](#project-layout)
+  - [Quick start](#quick-start)
+  - [Workflow](#workflow)
+    - [1. Build a routing network](#1-build-a-routing-network)
+    - [2. Route and benchmark](#2-route-and-benchmark)
+    - [3. Reproduce the paper figures](#3-reproduce-the-paper-figures)
+  - [Key results](#key-results)
+  - [License](#license)
 
 ---
 
