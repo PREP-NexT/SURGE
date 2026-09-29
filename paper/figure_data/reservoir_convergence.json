@@ -1,53 +1,45 @@
 {
- "note": "the 5 arc-minute 2010 year with and without the GRanD dams: 1 - KGE at the 5th percentile and at the median over the evaluated cells, against the serial solution (no dams) and against the level-by-level GPU solution (dams); bench_year_resolution.py",
+ "note": "the 5 arc-minute 2010 year with and without the GRanD dams: 1 - KGE at the 5th percentile and at the median over the evaluated cells, against the serial solution (no dams) and against the level-by-level GPU solution (dams); bench_year_resolution.py. The dam curve was re-run on 2026-09-23 on an RTX A6000 after the release was clipped to the storage bounds (run_dams_year_local.sh); the no-dam curve is the earlier ASPIRE A100 run, which the reservoir code does not touch. Both curves are shown to k = 10, the range the no-dam run covers.",
  "with_dams": {
   "1": {
-   "p5": 0.4063049808860243,
-   "median": 0.0766385992716081
+   "p5": 0.4784436102923959,
+   "median": 0.10027634194488244
   },
   "2": {
-   "p5": 0.154480423203591,
-   "median": 0.013249354957700188
+   "p5": 0.19336616470068246,
+   "median": 0.01930058518849942
   },
   "3": {
-   "p5": 0.06599630760139996,
-   "median": 0.0037154273123151116
+   "p5": 0.08408072642192144,
+   "median": 0.00571667951411825
   },
   "4": {
-   "p5": 0.029567786018598885,
-   "median": 0.001479539835859689
+   "p5": 0.041737102031047524,
+   "median": 0.0023257851004199193
   },
   "5": {
-   "p5": 0.0156659901654711,
-   "median": 0.0007739619023202637
+   "p5": 0.022245480697607567,
+   "median": 0.0012362730688064705
   },
   "6": {
-   "p5": 0.009268039353933277,
-   "median": 0.0004555391239301487
+   "p5": 0.01289163522953718,
+   "median": 0.0007430721849304156
   },
   "7": {
-   "p5": 0.005797593790004996,
-   "median": 0.0002891397583433264
+   "p5": 0.008100971984006278,
+   "median": 0.0004839118150938848
   },
   "8": {
-   "p5": 0.0038210553131690084,
-   "median": 0.00018352975222624135
+   "p5": 0.005402787472329029,
+   "median": 0.0003254775359757822
   },
   "9": {
-   "p5": 0.0026171623240874853,
-   "median": 0.00011678370565337826
+   "p5": 0.0037802739109416006,
+   "median": 0.00021919364035261069
   },
   "10": {
-   "p5": 0.0017979158090116742,
-   "median": 7.41070919459963e-05
-  },
-  "11": {
-   "p5": 0.0012998863906951152,
-   "median": 4.66170442434688e-05
-  },
-  "12": {
-   "p5": 0.0009637810091099874,
-   "median": 2.9020145314806456e-05
+   "p5": 0.0026948168525617877,
+   "median": 0.0001480889073628422
   }
  },
  "without_dams": {

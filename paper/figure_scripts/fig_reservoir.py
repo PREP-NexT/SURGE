@@ -48,8 +48,8 @@ ax1.set_xticklabels(['5 arcmin\n$k$ = %d' % RT["5'"]['surge']['k'],
                      '3 arcmin\n$k$ = %d' % RT["3'"]['surge']['k'],
                      '1 arcmin\n$k$ = %d' % RT["1'"]['surge']['k']])
 ax1.set_ylabel('Increase in wall-clock with the dams [%]')
-ax1.set_ylim(0, 12)
-panel_label(ax1, 'a'); ax1.set_title('Dams add six to seven per cent to SURGE')
+ax1.set_ylim(0, 17)
+panel_label(ax1, 'a'); ax1.set_title('Dams add one to eight per cent to SURGE')
 ax1.legend(loc='upper center', ncol=2, fontsize=8.0, handlelength=1.4, handletextpad=0.5,
            columnspacing=1.0, borderpad=0.3, framealpha=0.9, facecolor='white', edgecolor='none')
 ax1.grid(False, which='both')
@@ -57,24 +57,20 @@ ax1.grid(False, which='both')
 # (b) the criterion of section 4.1 with and without the dams, over the 2010 year
 CV = json.load(open(os.path.join(DATA, 'reservoir_convergence.json')))
 THRESH = 0.01                                  # 1 - KGE at the 5th percentile, the threshold
-for key, col, mk, lab, off, ha_ in (('without_dams', '0.5', 's--', 'SURGE without dams', (7, 0), 'left'),
+for key, col, mk, lab, off, ha_ in (('without_dams', '0.5', 's--', 'SURGE without dams', (-9, -31), 'right'),
                                     ('with_dams', '#0072B2', 'o-', 'SURGE with dams',
-                                     (-4, -10), 'right')):
+                                     (-9, -17), 'right')):
     d = CV[key]
     ks_ = sorted((int(k) for k in d), key=int)
     ks_ = [k for k in ks_ if k <= 12]
     ax2.plot(ks_, [max(d[str(k)]['p5'], 1e-7) for k in ks_], mk, color=col, lw=1.2, ms=4,
              markeredgecolor='k', markeredgewidth=0.4, label=lab)
-    cross = next((k for k in ks_ if d[str(k)]['p5'] <= THRESH), None)
-    if cross is not None:
-        ax2.annotate('$k$ = %d' % cross, xy=(cross, d[str(cross)]['p5']), xytext=off,
-                     textcoords='offset points', ha=ha_, va='center', fontsize=8.0, color=col)
 ax2.axhline(THRESH, color='#d1441f', lw=0.8, ls=(0, (4, 2)), zorder=1)
 ax2.text(12.4, THRESH * 1.12, 'Threshold, $\\mathrm{KGE}_c \\geq 0.99$\n'
          'at 95% of cells', fontsize=7.5, color='#d1441f', ha='right', va='bottom',
          linespacing=1.25)      # above the line and right of where the curves cross it
 ax2.set_yscale('log')
-ax2.set_xlabel('The number of Jacobi iterations $k$')
+ax2.set_xlabel('The number of parallel iterations $k$')
 ax2.set_ylabel('1 $-$ KGE$_c$ at the 5th percentile')
 ax2.set_xticks([1, 3, 5, 7, 9, 11]); ax2.set_xlim(0.5, 12.5); ax2.set_ylim(8e-4, 1.0)
 panel_label(ax2, 'b'); ax2.set_title('Reservoirs do not change convergence')

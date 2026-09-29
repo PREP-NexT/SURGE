@@ -1,45 +1,48 @@
 {
- "protocol": "bench_unified_timing.py (2026-09-14/15): uniform runoff 2 mm/day, steady state of that forcing shared by all configurations, 10 warm-up steps then the mean over 600 routing time steps (one month), Jacobi k=3, 4 Newton steps; SURGE compiled with torch.compile; CPU-parallel on 24 threads; serial = CWatM t5 C++ kernel on one core",
+ "protocol": "bench_unified_timing.py: uniform runoff 2 mm/day, steady state of that forcing shared by all configurations, 10 warm-up steps then the mean over 600 routing time steps, three repeats per configuration with the median reported; SURGE compiled with torch.compile and timed at the iteration count each river network needs (field k); GPU-ordered does not iterate",
  "machine": "NVIDIA A100-SXM4-40GB on a whole ASPIRE 2A node",
- "note": "SURGE is timed at the iteration count each river network needs (field k); GPU-ordered does not iterate. Unified protocol, exclusive A100 node, 2026-09-19. The k = 3 version is kept as reservoir_timing.json.bak_20260919_k3.",
- "source": "timing_unified/aspire_excl (PBS job 20558983)",
+ "note": "Measured after the reservoir router was rewritten: the sweep no longer touches the whole grid to write a few hundred cells, and the level loop no longer asks the device, once per level, whether that level holds a dam. none = no reservoir code, code_only = the code with no reservoir in it, dams = the GRanD dams. The previous version is kept as reservoir_timing.json.bak_20260926_prev3.",
+ "source": "timing_unified/aspire_res_v3 (PBS job 25562935, 2026-09-26)",
  "rows": {
   "5'": {
    "surge": {
-    "none": 1.3002,
-    "dams": 1.3938,
+    "none": 1.2653,
+    "code_only": 1.2682,
+    "dams": 1.3655,
     "k": 7
    },
    "gpu_ordered": {
-    "none": 468.3235,
-    "code_only": 486.2107,
-    "dams": 493.997
+    "none": 464.1259,
+    "code_only": 462.3833,
+    "dams": 531.621
    },
    "reservoir_cells": 6501
   },
   "3'": {
    "surge": {
-    "none": 5.266,
-    "dams": 5.6081,
+    "none": 5.212,
+    "code_only": 5.2092,
+    "dams": 5.4568,
     "k": 11
    },
    "gpu_ordered": {
-    "none": 867.5185,
-    "code_only": 891.3742,
-    "dams": 896.432
+    "none": 847.6253,
+    "code_only": 845.3477,
+    "dams": 946.7687
    },
    "reservoir_cells": 6966
   },
   "1'": {
    "surge": {
-    "none": 123.6413,
-    "dams": 130.8675,
+    "none": 123.6377,
+    "code_only": 123.6348,
+    "dams": 125.2576,
     "k": 30
    },
    "gpu_ordered": {
-    "none": 2819.6273,
-    "code_only": 2965.0027,
-    "dams": 2955.4145
+    "none": 2840.9236,
+    "code_only": 2845.9811,
+    "dams": 2962.959
    },
    "reservoir_cells": 7270
   }
