@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/PREP-NexT/SURGE">
-    <img src="logo/surge_logo.svg" width="420" alt="SURGE logo">
+    <img src="logo/surge_flow.gif" width="420" alt="SURGE logo">
   </a>
 </p>
 
