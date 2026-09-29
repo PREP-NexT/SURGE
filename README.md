@@ -1,3 +1,18 @@
+<p align="center">
+  <a href="https://github.com/PREP-NexT/SURGE">
+    <img src="logo/surge_logo.svg" width="550" alt="SURGE logo">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://www.python.org/"><img alt="Build" src="https://img.shields.io/badge/Made%20with-Python-1f425f.svg?color=purple"></a>
+  <a href="https://github.com/PREP-NexT/SURGE"><img src="https://img.shields.io/github/contributors/PREP-NexT/SURGE.svg" alt="GitHub contributors"></a>
+  <a href="https://github.com/PREP-NexT/SURGE"><img src="https://img.shields.io/github/issues/PREP-NexT/SURGE.svg" alt="GitHub issues"></a>
+  <a href="https://twitter.com/PREPNexT_Lab"><img src="https://img.shields.io/twitter/follow/PREPNexT_Lab.svg?label=Follow&style=social" alt="Twitter Follow"></a>
+  <a href="https://github.com/PREP-NexT/SURGE"><img src="https://img.shields.io/github/license/PREP-NexT/SURGE.svg" alt="License"></a>
+  <a href="https://github.com/PREP-NexT/SURGE"><img src="https://badges.frapsoft.com/os/v1/open-source.svg?v=103" alt="Open Source"></a>
+</p>
+
 # SURGE: Scalable Upstream-decoupled Routing on GPU-Engine
 
 **SURGE** is a GPU-parallel solver for the implicit kinematic-wave river routing
@@ -15,9 +30,9 @@ serial solution.
 - One NVIDIA A100 routes the global networks **137 to 531 times** faster than
   the serial C kernel on one CPU core. A simulated year of the 56-million-cell
   1 arc-minute network takes about 15 minutes instead of about 34 hours.
-- Managed reservoirs (the full GRanD set) are carried as storage-based fixed
-  sources, which costs six to seven per cent more time and no extra
-  iterations.
+- Managed reservoirs (the full GRanD set) are carried as a storage-based
+  release at each dam cell, which costs 1.3 to 7.9 per cent more time and no
+  extra iterations.
 - Every operation is a tensor primitive, so the solver batches over ensembles;
   being built from differentiable operations, it also supports reverse-mode
   autograd.

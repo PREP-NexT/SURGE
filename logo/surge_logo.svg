@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1446" height="1088" viewBox="0 0 1446 1088" role="img" aria-labelledby="logo-title logo-desc">
+  <title id="logo-title">SURGE</title>
+  <desc id="logo-desc">A river flowing from a dam beneath a microchip, framed by a circular landscape and custom SURGE lettering. Editable vector reconstruction.</desc>
+  <defs>
+    <linearGradient id="sky-fill" gradientUnits="userSpaceOnUse" x1="578" y1="116" x2="866" y2="371"><stop stop-color="#49d8f5"/><stop offset="0.6" stop-color="#00b8f4"/><stop offset="1" stop-color="#008bff"/></linearGradient>
+    <linearGradient id="mountain-fill" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0566ad"/><stop offset="1" stop-color="#003c7e"/></linearGradient>
+    <linearGradient id="navy-fill" x1="0" y1="0" x2="0.7" y2="1"><stop stop-color="#073e76"/><stop offset="0.55" stop-color="#002443"/><stop offset="1" stop-color="#002b55"/></linearGradient>
+    <linearGradient id="type-fill" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#002648"/><stop offset="0.55" stop-color="#002143"/><stop offset="1" stop-color="#00315a"/></linearGradient>
+    <linearGradient id="lake-fill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#5cffff"/><stop offset="0.25" stop-color="#08ddf7"/><stop offset="1" stop-color="#009bf5"/></linearGradient>
+    <linearGradient id="river-fill" x1="0" y1="0" x2="0.85" y2="1"><stop stop-color="#20faff"/><stop offset="0.45" stop-color="#00bdf4"/><stop offset="1" stop-color="#0064f5"/></linearGradient>
+    <linearGradient id="river-blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#00c2fa"/><stop offset="1" stop-color="#0047ce"/></linearGradient>
+    <linearGradient id="river-cyan" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#75ffff"/><stop offset="0.45" stop-color="#00e6f3"/><stop offset="1" stop-color="#0074ea"/></linearGradient>
+    <linearGradient id="river-pale" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset="0.45" stop-color="#d8ffff"/><stop offset="1" stop-color="#00b5ed"/></linearGradient>
+    <linearGradient id="trace-fill" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#00e7ec"/><stop offset="1" stop-color="#00b5ed"/></linearGradient>
+    <linearGradient id="core-fill" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#80ffff"/><stop offset="0.35" stop-color="#07dbee"/><stop offset="1" stop-color="#0081f2"/></linearGradient>
+    <linearGradient id="e-fill"><stop stop-color="#00f2eb"/><stop offset="0.3" stop-color="#00cfeb"/><stop offset="1" stop-color="#0077ff"/></linearGradient>
+    <linearGradient id="spill-fill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#00bfea"/><stop offset="0.2" stop-color="#7cffff"/><stop offset="0.75" stop-color="#d8ffff"/><stop offset="1" stop-color="#03d2f3"/></linearGradient>
+    <clipPath id="circle-clip"><circle cx="723" cy="441.5" r="327.5"/></clipPath>
+    <clipPath id="river-reveal"><rect id="river-wipe" x="445" y="429" width="530" height="350"/></clipPath>
+  </defs>
+  <g id="artwork">
+    <g id="mark" clip-path="url(#circle-clip)">
+      <circle id="sky" cx="723" cy="441.5" r="327.5" fill="url(#sky-fill)"/>
+      <g id="mountains">
+        <path fill="url(#mountain-fill)" d="M416 310 L501 284 L543 301 L566 292 L626 318 L641 315 L684 330 L776 330 L823 315 L874 295 L902 302 L945 279 L991 291 L1010 285 L1042 345 L408 345Z"/>
+        <path fill="#04558f" d="M500 285 L532 321 L562 327 L504 329 L454 307Z M566 293 L594 326 L624 328Z M825 316 L873 295 L849 327 L777 330Z" opacity="0.7"/>
+        <path fill="url(#navy-fill)" d="M416 280 L484 317 L501 318 L540 346 L407 346Z M914 345 L950 319 L969 315 L1020 278 L1041 345Z"/>
+      </g>
+      <g id="reservoir">
+        <path fill="url(#lake-fill)" d="M508 328 H937 L873 377 H573Z"/>
+        <path fill="#a1ffff" opacity="0.3" d="M619 332 H806 V334 H619Z M655 339 H782 V341 H655Z M684 349 H759 V351 H684Z M703 359 H749 V361 H703Z"/>
+      </g>
+      <g id="dam">
+        <path fill="url(#river-fill)" d="M588 383 H866 L840 446 H610Z"/>
+        <path fill="#00538f" d="M694 389 H853 L838 447 H722 V413Z"/>
+        <path fill="#001e39" d="M708 391 H825 V407 H708Z"/>
+        <path fill="url(#spill-fill)" d="M709 402 H724 V444 H709Z M740 402 H757 V445 H740Z M773 402 H789 V447 H773Z M804 402 H821 V449 H804Z"/>
+        <path fill="#0477bc" d="M724 392 H739 V448 H724Z M757 392 H772 V449 H757Z M789 392 H804 V450 H789Z M821 392 H837 V451 H821Z"/>
+        <path fill="#fff" d="M718 407 H722 C721 424 716 435 709 442 V430 C714 423 717 415 718 407Z"/>
+        <path fill="#fff" d="M587 376 H869 V389 H594Z"/>
+      </g>
+      <g id="banks">
+        <path fill="url(#navy-fill)" d="M383 344 C439 345 512 347 550 353 C580 357 588 369 599 399 L614 439 C634 452 680 466 696 486 C720 520 584 537 516 577 C478 599 459 618 459 642 L370 669Z"/>
+        <path fill="url(#navy-fill)" d="M1067 344 C1009 346 945 347 905 353 C877 357 867 372 857 398 C848 423 838 447 825 462 C842 472 866 484 871 499 C882 532 787 547 800 580 C813 615 922 627 954 672 L1073 621Z"/>
+        <path fill="#004378" opacity="0.4" d="M615 443 C642 453 657 465 660 477 C667 505 586 525 552 539 C625 520 714 513 697 486 C685 467 638 452 615 443Z"/>
+        <path fill="#004b85" opacity="0.36" d="M1038 378 C981 404 994 438 953 457 C924 472 897 493 870 500 C843 507 820 535 807 552 C807 519 849 505 825 462 C838 445 849 420 857 398 C867 372 877 357 905 353 C945 347 1009 346 1038 348Z"/>
+        <path fill="#fff" d="M400 338 C456 340 513 340 550 344 C580 347 590 359 601 389 L619 437 L609 445 C600 427 594 409 587 389 C578 365 572 360 547 357 C508 352 451 352 398 350Z M1048 339 C991 341 939 341 905 345 C876 348 864 360 854 390 C847 409 841 427 832 444 L841 445 C855 425 860 407 869 386 C878 365 885 361 909 357 C946 352 999 353 1051 350Z"/>
+      </g>
+      <g id="river" clip-path="url(#river-reveal)">
+        <path fill="url(#river-blue)" d="M611 438 C692 443 852 461 871 494 C893 532 772 543 783 577 C796 614 926 626 954 672 L928 718 C858 755 786 779 704 769 C593 759 471 710 459 642 C444 569 601 545 671 518 C749 488 656 466 611 438Z"/>
+        <path fill="#fff" d="M611 438 C691 444 842 468 860 494 C887 532 719 546 713 576 C705 609 897 632 932 686 C936 692 939 705 939 711 L887 735 C891 685 814 669 744 645 C683 625 631 605 651 576 C674 543 826 526 803 493 C782 467 676 450 611 438Z"/>
+        <path fill="url(#river-fill)" d="M611 438 C677 450 782 467 803 493 C826 526 674 543 651 576 C625 611 716 630 768 652 C847 681 886 699 887 735 L826 758 C808 706 754 692 692 670 C628 647 562 622 593 584 C625 548 784 526 766 493 C752 468 660 449 611 438Z"/>
+        <path fill="url(#river-cyan)" d="M611 438 C660 449 752 468 766 493 C784 526 625 548 593 584 C555 629 657 655 713 678 C767 700 809 721 826 758 L704 769 C689 728 638 711 594 687 C541 658 507 624 536 591 C569 553 737 530 737 497 C737 472 654 451 611 438Z"/>
+        <path fill="url(#river-fill)" d="M611 438 C654 451 737 472 737 497 C737 530 569 553 536 591 C500 632 564 673 608 697 C653 722 693 740 704 769 C625 761 542 728 493 689 C421 630 471 585 544 556 C604 532 677 518 696 502 C721 480 651 458 611 438Z"/>
+        <path fill="#fff" d="M611 438 C651 458 721 480 696 502 C677 518 604 532 544 556 C471 585 421 630 493 689 C478 675 470 659 470 644 C466 599 535 567 602 545 C667 523 724 512 724 494 C724 472 651 451 611 438Z"/>
+        <path fill="url(#river-pale)" d="M554 553 C506 574 477 603 487 638 C500 685 606 735 675 763 C601 750 526 718 486 681 C441 639 463 587 554 553Z"/>
+      </g>
+      <g id="bank-traces" fill="none" stroke="#00dbed" stroke-width="12" stroke-linejoin="miter">
+        <path id="bank-line-1" pathLength="1" d="M397 441 H510"/>
+        <path id="bank-line-2" pathLength="1" d="M397 483 H449 L470 504 H549"/>
+        <path id="bank-line-3" pathLength="1" d="M1048 442 H933"/>
+        <path id="bank-line-4" pathLength="1" d="M1048 485 H995 L938 544 H905"/>
+        <path id="bank-line-5" pathLength="1" d="M1048 526 H1001 L963 566"/>
+      </g>
+      <g id="bank-terminals" fill="url(#trace-fill)">
+        <circle cx="510" cy="441" r="20"/><circle cx="549" cy="504" r="20"/>
+        <circle cx="933" cy="442" r="20"/><circle cx="905" cy="545" r="20"/><circle cx="963" cy="566" r="16"/>
+      </g>
+      <g id="chip-traces" fill="none" stroke="#fff" stroke-width="3.5" stroke-linejoin="round">
+        <path id="chip-line-1" pathLength="1" d="M695 259 H653 L630 232 H588"/>
+        <path id="chip-line-2" pathLength="1" d="M695 277 H640 L622 259 H566"/>
+        <path id="chip-line-3" pathLength="1" d="M695 292 H648 L628 294"/>
+        <path id="chip-line-4" pathLength="1" d="M754 253 H808 L829 232 H872"/>
+        <path id="chip-line-5" pathLength="1" d="M754 273 H818 L834 259 H892"/>
+        <path id="chip-line-6" pathLength="1" d="M754 293 H819"/>
+      </g>
+      <g id="chip-terminals" stroke="#fff" stroke-width="5" fill="url(#sky-fill)">
+        <circle cx="588" cy="232" r="6.5"/><circle cx="566" cy="259" r="6.5"/>
+        <circle cx="628" cy="294" r="6" fill="#b0ffff"/>
+        <circle cx="872" cy="232" r="6.5"/><circle cx="892" cy="259" r="6.5"/><circle cx="819" cy="294" r="6.5"/>
+      </g>
+      <g id="chip">
+        <path fill="none" stroke="#fff" stroke-width="4" d="M706 218 V241 M718 218 V241 M731 218 V241 M744 218 V241 M706 303 V337 M718 303 V337 M731 303 V337 M744 303 V337 M675 251 H697 M675 264 H697 M675 278 H697 M675 291 H697 M752 251 H775 M752 264 H775 M752 278 H775 M752 291 H775"/>
+        <rect x="690" y="237" width="70" height="70" rx="10" fill="#fff"/>
+        <rect x="698" y="245" width="54" height="54" rx="5" fill="#063971"/>
+        <rect id="chip-core" x="706" y="253" width="39" height="39" rx="2" fill="url(#core-fill)"/>
+      </g>
+    </g>
+    <g id="wordmark">
+      <g id="letter-s">
+        <path fill="url(#type-fill)" d="M461 732 C391 722 303 751 262 780 C237 798 225 819 240 839 C253 854 285 852 300 864 C322 882 236 917 193 954 C249 933 305 948 351 943 C402 938 441 914 441 876 C441 839 404 824 359 817 C337 813 326 811 328 802 C333 782 408 741 461 732Z"/>
+        <path fill="#fff" d="M461 732 C399 738 327 766 295 796 C259 830 301 832 330 847 C393 880 301 913 193 954 C260 921 353 896 376 876 C394 860.35 343 837 322 827 C285 810 355 756 461 732Z"/>
+        <path fill="url(#river-fill)" d="M461 732 C355 756 285 810 322 827 C343 837 394 860.35 376 876 C353 896 260 921 193 954 C272 932 326 951 372 937 C417 924 443 902 440 872 C437 840 402 824 359 817 C337 813 326 811 328 802 C333 782 408 741 461 732Z"/>
+        <path fill="url(#river-cyan)" d="M431 739 C379 755 316 786 311 805 C305 825 353 826 369 844 C404 883 296 916 210 946 C295 924 369 921 401 886 C429 854 391 836 354 824 C305 809 331 780 431 739Z"/>
+        <path fill="#0061de" d="M193 954 C271 931 326 948 372 937 C400 929 420 914 431 899 C367 931 270 927 193 954Z"/>
+      </g>
+      <path id="letter-u" fill="url(#type-fill)" d="M453 803 H496 V891 C496 905 502 909 523 909 H575 C595 909 599 903 599 889 V803 H640 V888 C640 925 620 942 584 942 H505 C470 942 453 922 453 889Z"/>
+      <g id="letter-r">
+        <path fill="url(#type-fill)" d="M655 803 H788 C816 803 831 819 831 846 C831 873 813 889 781 889 H769 C793 916 821 936 858 944 C813 944 784 930 758 910 C733 890 719 872 700 880 C679 889 662 924 648 943 L658 891 C666 863 684 850 706 850 C728 850 742 861 765 861 H773 C781 861 786 857 786 849 C786 841 781 837 773 837 H655Z"/>
+        <path fill="#fff" d="M648 943 C668 894 686 864 707 865 C737 863 755 893 777 911 C798 928 826 941 858 944 C805 947 778 930 752 911 C731 894 715 881 698 888 C679 896 665 919 648 943Z"/>
+        <path fill="url(#river-fill)" d="M648 943 C669 906 684 879 705 877 C731 875 751 903 776 921 C798 936 820 942 843 944 C803 947 777 938 753 922 C730 906 718 897 703 901 C683 907 665 925 648 943Z"/>
+        <path fill="url(#river-cyan)" d="M648 943 C667 915 686 891 703 891 C725 891 747 912 767 927 C779 936 790 940 801 943 C776 939 757 926 739 915 C722 904 710 902 699 909 C680 918 663 931 648 943Z"/>
+      </g>
+      <path id="letter-g" fill="url(#type-fill)" d="M907 803 H1031 V837 H911 C896 837 887 846 887 860 V887 C887 901 896 908 911 908 H975 C985 908 990 903 990 894 V887 H939 V855 H1031 V900 C1031 927 1014 942 985 942 H907 C869 942 847 920 847 885 V859 C847 825 869 803 907 803Z"/>
+      <g id="letter-e">
+        <path fill="url(#type-fill)" d="M1109 803 H1240 V837 H1111 C1097 837 1087 846 1087 860 V885 C1087 900 1096 908 1111 908 H1240 V942 H1109 C1070 942 1047 920 1047 885 V860 C1047 825 1070 803 1109 803Z"/>
+        <path id="e-accent" fill="url(#e-fill)" d="M1115 854 H1240 V890 H1115 Q1105 890 1105 880 V864 Q1105 854 1115 854Z"/>
+      </g>
+    </g>
+  </g>
+</svg>
