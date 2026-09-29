@@ -151,6 +151,24 @@ python examples/bench_reservoir.py  net.npz res_grand.npz     # + map_grand_dams
 python examples/bench_cpu_parallel.py net.npz 24              # CPU baseline
 ```
 
+The timings reported in the paper come from one protocol, in
+`examples/bench_unified_timing.py`: a uniform runoff of 2 mm/day, the steady
+discharge field of that forcing shared by every configuration, ten warm-up time
+steps and then 600 timed ones, with `--repeats` runs of each configuration. It
+takes the network and that steady state, and writes one JSON file per
+configuration.
+
+```bash
+python examples/bench_unified_timing.py steady net.npz steady.npz
+python examples/bench_unified_timing.py time surge net.npz steady.npz out.json --repeats 3
+python examples/bench_unified_timing.py time gpu_ordered net.npz steady.npz out.json \
+    --res res_grand.npz --repeats 3
+```
+
+The configurations are `surge`, `gpu_ordered`, `cpu_parallel` and `cpu_serial`,
+and `SURGE_SWEEPS` sets the iteration count each network runs at. The
+`cpu_serial` configuration calls the CWatM kernel, so it needs `GPU_KWR_T5_SO`.
+
 ### 3. Reproduce the paper figures
 
 ```bash
