@@ -88,7 +88,7 @@ class TorchRouter:
             qk = self.newton(qin, qold, q, alpha=alpha, n_iter=n_newton)
         return qk
 
-    # ------------------------------------------------- blocked Gauss-Seidel
+    # ------------------------------------------------------------------ run
     def run(self, q0, sideflow, scheme='parallel', checkpoint_every=0, **kw):
         """Route a (T_substeps, N) or (T, B, N) sideflow series. Returns (T, ..., N) Q.
 
