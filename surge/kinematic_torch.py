@@ -89,101 +89,13 @@ class TorchRouter:
         return qk
 
     # ------------------------------------------------- blocked Gauss-Seidel
-    def _build_blocks(self, n_blocks):
-        """Partition topological levels into contiguous ranges (cached)."""
-        key = int(n_blocks)
-        if not hasattr(self, '_blocks'):
-            self._blocks = {}
-        if key in self._blocks:
-            return self._blocks[key]
-        L = self.net.n_levels
-        bounds = np.linspace(0, L, n_blocks + 1).astype(int)
-        blocks = []
-        lv_dst_sorted = None
-        for b in range(n_blocks):
-            l0, l1 = bounds[b], bounds[b + 1]
-            if l1 <= l0:
-                continue
-            c0, c1 = self.level_ptr[l0], self.level_ptr[l1]
-            cells = self.cells_by_level[c0:c1]
-            e0, e1 = self.edge_level_ptr[l0], self.edge_level_ptr[l1]
-            # edges whose dst lies in this block (src may be anywhere upstream)
-            src, dst = self.edge_src_lv[e0:e1], self.edge_dst_lv[e0:e1]
-            blocks.append((cells, src, dst))
-        self._blocks[key] = blocks
-        return blocks
-
-    def substep_blocked_gs(self, qold, q, alpha=None, n_blocks=8, iterations=3,
-                           n_newton=4):
-        """Blocked Gauss-Seidel over level ranges, parallel inside each block.
-
-        Blocks are processed upstream-to-downstream, so within-substep
-        information propagates the full network depth at the FLOP cost of
-        `iterations` global iterations; truncation error is confined to
-        within-block coupling deeper than `iterations` levels.
-        """
-        blocks = self._build_blocks(n_blocks)
-        a_full = self.alpha if alpha is None else alpha
-        qk = (qold + q * 0).clamp_min(0.0)   # broadcast to common shape
-        for cells, src, dst in blocks:
-            a_b = a_full[..., cells] if a_full.shape[-1] == self.n else a_full
-            for _ in range(iterations):
-                qin = torch.zeros_like(qk)
-                qin.index_add_(-1, dst, qk.index_select(-1, src))
-                qk = qk.clone()
-                qk[..., cells] = self.newton(
-                    qin[..., cells], qold[..., cells], q[..., cells],
-                    alpha=a_b, n_iter=n_newton, dx=self.dx[cells])
-        return qk
-
-    # ------------------------------------------------------- focused iterations
-    def _build_deep(self, thresh):
-        key = int(thresh)
-        if not hasattr(self, '_deep'):
-            self._deep = {}
-        if key not in self._deep:
-            lv = self.net.level
-            deep = np.nonzero(lv > thresh)[0]
-            sel = lv[self.net.edge_dst] > thresh
-            t = lambda a: torch.as_tensor(a, dtype=torch.int64, device=self.device)
-            self._deep[key] = (t(deep), t(self.net.edge_src[sel]),
-                               t(self.net.edge_dst[sel]))
-        return self._deep[key]
-
-    def substep_focused(self, qold, q, alpha=None, iterations=3, deep_iterations=5,
-                        n_newton=4, deep_thresh=None):
-        """Iterations everywhere, then extra iterations on deep cells only.
-
-        Cells with topological level <= `iterations` are exact after the global
-        iterations; the extra iterations push the truncation depth of the remaining
-        (deep) cells to iterations+deep_iterations at ~quarter of the per-iteration cost
-        (deep cells are ~27% of the domain for thresh=3).
-        """
-        thresh = iterations if deep_thresh is None else deep_thresh
-        deep, esrc_d, edst_d = self._build_deep(thresh)
-        a_full = self.alpha if alpha is None else alpha
-        a_d = a_full[..., deep] if a_full.shape[-1] == self.n else a_full
-        qk = self.substep_parallel(qold, q, alpha=alpha, iterations=iterations,
-                                 n_newton=n_newton)
-        for _ in range(deep_iterations):
-            qin = torch.zeros_like(qk)
-            qin.index_add_(-1, edst_d, qk.index_select(-1, esrc_d))
-            qk = qk.clone()
-            qk[..., deep] = self.newton(qin[..., deep], qold[..., deep],
-                                        q[..., deep], alpha=a_d,
-                                        n_iter=n_newton, dx=self.dx[deep])
-        return qk
-
-    # ----------------------------------------------------------------- runs
     def run(self, q0, sideflow, scheme='parallel', checkpoint_every=0, **kw):
         """Route a (T_substeps, N) or (T, B, N) sideflow series. Returns (T, ..., N) Q.
 
         checkpoint_every > 0 wraps blocks of substeps in torch.utils.checkpoint
         (recompute-on-backward) so long differentiable runs fit in VRAM.
         """
-        step = {'parallel': self.substep_parallel, 'ordered': self.substep_ordered,
-                'blocked_gs': self.substep_blocked_gs,
-                'focused': self.substep_focused}[scheme]
+        step = {'parallel': self.substep_parallel, 'ordered': self.substep_ordered}[scheme]
         T = sideflow.shape[0]
         q = q0
         out = []
