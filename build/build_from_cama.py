@@ -28,7 +28,7 @@ down[np.where(flow)[0]] = tgt
 down[down < 0] = -1
 print(f'  outlets/mouths: {int((down<0).sum()):,}')
 
-# upstream CSR
+# the upstream neighbours of every cell, packed end to end with an offset array
 child = np.arange(N)[down >= 0]; parent = down[down >= 0]
 o = np.argsort(parent, kind='stable')
 dirupID = child[o].astype(np.int64)

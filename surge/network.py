@@ -2,7 +2,12 @@
 
 A routing network is stored as a compressed .npz (see build/). The serial
 kinematic wave walks cells in topological order (dirDown), pulling inflow from
-already-updated upstream cells via a CSR structure (dirupLen/dirupID). Here we:
+the upstream cells it has already updated. It finds them through two arrays:
+dirupID holds the upstream neighbours of every cell end to end, and dirupLen
+says where each cell's neighbours start, so the neighbours of cell c are
+dirupID[dirupLen[c]:dirupLen[c+1]]. A cell has between zero and seven of them,
+which is why they are packed this way rather than held in a rectangular array.
+Here we:
 
 1. reconstruct the topological *levels* (all cells in one level have all their
    upstream neighbours in strictly lower levels) -> the ordered schedule;
@@ -82,7 +87,11 @@ class RoutingNetwork:
         self.level_ptr = np.searchsorted(lv, np.arange(self.n_levels + 1))
 
     def _build_edges(self):
-        """Pure-Python fallback: flat (src -> dst) edge arrays over dirDown."""
+        """Pure-Python fallback: flat (src -> dst) edge arrays over dirDown.
+
+        Reads the packed upstream neighbours described at the top of this file
+        and writes one entry per edge, which is what scatter-add wants.
+        """
         dst, src = [], []
         for c in self.dirDown:
             lo, hi = self.dirupLen[c], self.dirupLen[c + 1]

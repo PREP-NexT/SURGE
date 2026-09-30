@@ -31,7 +31,7 @@ def build_graph(ldd, lat_c, lon_c, ups, res_deg, nsub, out):
     down = np.full(N, -1, np.int64)
     di = idx2d[np.clip(nr, 0, ny-1), np.clip(ncl, 0, nx-1)]
     ok = inb & (codes != 5) & (di >= 0); down[ok] = di[ok]
-    # upstream CSR
+    # the upstream neighbours of every cell, packed end to end with an offset array
     child = np.arange(N)[down >= 0]; parent = down[down >= 0]
     o = np.argsort(parent, kind='stable')
     dirupID = child[o].astype(np.int64)
