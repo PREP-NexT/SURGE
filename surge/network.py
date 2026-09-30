@@ -5,7 +5,7 @@ kinematic wave walks cells in topological order (dirDown), pulling inflow from
 already-updated upstream cells via a CSR structure (dirupLen/dirupID). Here we:
 
 1. reconstruct the topological *levels* (all cells in one level have all their
-   upstream neighbours in strictly lower levels) -> the wavefront schedule;
+   upstream neighbours in strictly lower levels) -> the ordered schedule;
 2. build a flat edge list (upstream_cell -> downstream_cell) for scatter-add
    inflow accumulation on the GPU.
 

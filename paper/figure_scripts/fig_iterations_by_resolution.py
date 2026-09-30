@@ -1,4 +1,4 @@
-"""One row per river network, the shortfall in KGE against the number of Jacobi
+"""One row per river network, the shortfall in KGE against the number of parallel
 iterations. Each iteration count carries a gradient bar (density along the bar), a thin
 5-95 per cent interval and a median dot, after ggdist's gradientinterval. Rows share the
 iteration axis, so the same k can be compared down the column, and each row picks out its
@@ -183,7 +183,7 @@ print('crossings: %s' % {t: v[1] for t, v in CHOSEN.items()})
 
 axs[-1].set_xticks(range(len(KS_ALL)))
 axs[-1].set_xticklabels([str(k) for k in KS_ALL])
-axs[-1].set_xlabel('Jacobi iterations $k$')
+axs[-1].set_xlabel('Parallel iterations $k$')
 # the threshold is named on the first row, sitting on its own line
 import matplotlib.transforms as mtransforms
 axs[0].text(0.50, np.log10(1 - THRESH) + 0.12,

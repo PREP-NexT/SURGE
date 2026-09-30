@@ -1,5 +1,5 @@
-"""Depth-independence: on each network, compare Jacobi k=1..8 against the exact
-wavefront on the SAME network, on a flood transient, at three runoff levels that
+"""Depth-independence: on each network, compare the parallel scheme k=1..8 against the exact
+ordered scheme on the SAME network, on a flood transient, at three runoff levels that
 bracket the operational Courant regime. If the k needed for a given accuracy is
 ~constant while the level count varies, depth-independence holds.
 
@@ -30,16 +30,16 @@ for npz in sys.argv[1:]:
         q_side = torch.nan_to_num(rmm / 1000 / 86400 * cellArea / dx).clamp_min(0)
         q = torch.zeros(N, dtype=DT, device=DEV)
         for _ in range(nsub * SPIN_DAYS):
-            q = router.substep_jacobi(q, q_side, sweeps=3, n_newton=4)
+            q = router.substep_parallel(q, q_side, iterations=3, n_newton=4)
         torch.cuda.synchronize()
         Q = q.clamp_min(1e-6)
         c = 1.0 / (router.alpha * router.beta * Q ** (router.beta - 1))
         Cr = (c * router.dt / dx).cpu().numpy()
-        q_flood = q_side * 5.0  # step the inflow up: a transient extra sweeps must carry
-        qref = router.substep_wavefront(q, q_flood, n_newton=8)
+        q_flood = q_side * 5.0  # step the inflow up: a transient extra iterations must carry
+        qref = router.substep_ordered(q, q_flood, n_newton=8)
         print("  runoff %.1f mm/d: Cr med/p90/p99 %.2f/%.2f/%.2f"
               % (rmm, np.median(Cr), np.percentile(Cr, 90), np.percentile(Cr, 99)))
         for k in (1, 2, 3, 5, 8):
-            qk = router.substep_jacobi(q, q_flood, sweeps=k, n_newton=6)
+            qk = router.substep_parallel(q, q_flood, iterations=k, n_newton=6)
             rel = ((qk - qref).abs() / qref.clamp_min(1e-3)).detach().cpu().numpy()
             print("     k=%d  median %.2e  p99 %.2e" % (k, np.median(rel), np.percentile(rel, 99)))

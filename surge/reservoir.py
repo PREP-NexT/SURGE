@@ -4,7 +4,7 @@ A reservoir cell replaces the kinematic-wave update with a storage-based release
 (a Hanasaki-style rule: outflow tracks the long-term mean inflow, modulated by the
 fill fraction). The release depends only on the START-of-substep storage, so within
 a substep a reservoir cell is a fixed source -- it decouples its upstream from its
-downstream, which is why adding reservoirs does not slow the Jacobi fixed point or
+downstream, which is why adding reservoirs does not slow the fixed point or
 change its convergence (see paper Section 3.6). Storage is mass-balanced once per
 substep from the converged inflow.
 
@@ -13,7 +13,7 @@ Usage:
     from surge.reservoir import ResRouter
     r = ResRouter(net, device='cuda', dtype=torch.float32)
     r.set_reservoirs(res_cell, cap_m3, rmean)          # from map_grand_dams.py
-    q = r.jacobi_res(qold, q_lat, sweeps=3)            # or r.wavefront_res(...)
+    q = r.parallel_res(qold, q_lat, iterations=3)            # or r.ordered_res(...)
 """
 import numpy as np
 import torch
@@ -81,12 +81,12 @@ class ResRouter(TorchRouter):
         """mass balance, which stays inside [0, cap] because the release was clipped"""
         self.S = self.S + (I.to(torch.float64) - R.to(torch.float64)) * self.dt
 
-    def jacobi_res(self, qold, q, sweeps=3, n_newton=4):
+    def parallel_res(self, qold, q, iterations=3, n_newton=4):
         qk = qold.clamp_min(0.0)
-        if self.res_cell.numel() == 0:                 # nothing to do beyond the plain sweep
-            return self.substep_jacobi(qold, q, sweeps=sweeps, n_newton=n_newton)
+        if self.res_cell.numel() == 0:                 # nothing to do beyond the plain step
+            return self.substep_parallel(qold, q, iterations=iterations, n_newton=n_newton)
         qlat = (q * self.dx).index_select(-1, self.res_cell)      # the same every iteration
-        for _ in range(sweeps):
+        for _ in range(iterations):
             qin = torch.zeros_like(qk)
             qin.index_add_(-1, self.edge_dst, qk.index_select(-1, self.edge_src))
             R = self._release(qin.index_select(-1, self.res_cell) + qlat)
@@ -119,9 +119,9 @@ class ResRouter(TorchRouter):
                 out.append(None)
         self._level_res = out
 
-    def wavefront_res(self, qold, q, n_newton=4):
+    def ordered_res(self, qold, q, n_newton=4):
         if self.res_cell.numel() == 0:
-            return self.substep_wavefront(qold, q, n_newton=n_newton)
+            return self.substep_ordered(qold, q, n_newton=n_newton)
         qnew = torch.zeros_like(qold + q)
         R = torch.zeros_like(self.S)
         qlat = q * self.dx

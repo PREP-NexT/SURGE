@@ -1,4 +1,4 @@
-"""Route a daily runoff series to discharge on a routing network (GPU Jacobi, k=3),
+"""Route a daily runoff series to discharge on a routing network (GPU parallel scheme, k=3),
 the basic end-use of the solver. Saves annual-mean discharge per cell.
 
 Usage:
@@ -32,7 +32,7 @@ def route(q, record=False):
     for d in range(ndays):
         qd = runoff[:, d] * factor
         for _ in range(nsub):
-            q = router.substep_jacobi(q, qd, sweeps=3, n_newton=4)
+            q = router.substep_parallel(q, qd, iterations=3, n_newton=4)
             if record:
                 acc += q
     return q, (acc / (ndays * nsub) if record else None)

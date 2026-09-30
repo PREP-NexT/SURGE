@@ -1,6 +1,6 @@
 """Three schemes WITH real GRanD reservoirs (paper Section 3.6, Fig. 7): per-substep
-cost of wavefront_res vs jacobi_res (eager & fused), and whether reservoirs change
-the Jacobi-vs-exact agreement. Needs a res_*.npz from map_grand_dams.py.
+cost of ordered_res vs parallel_res (eager & fused), and whether reservoirs change
+the parallel-vs-exact agreement. Needs a res_*.npz from map_grand_dams.py.
 
     python examples/bench_reservoir.py net.npz res.npz
 """
@@ -23,12 +23,12 @@ N, L = net.n_cells, net.n_levels
 area = torch.as_tensor(net.cellArea, dtype=torch.float32, device='cuda')
 q = (0.02 * area / 86400.).float(); qref = torch.zeros(N, device='cuda')
 reps = 60 if L < 300 else 30 if L < 1000 else 8 if L < 2000 else 3
-r.reset_storage(); wf = timeit(lambda: r.wavefront_res(qref, q, n_newton=4), max(2, reps // 5), reps)
-r.reset_storage(); je = timeit(lambda: r.jacobi_res(qref, q, sweeps=3, n_newton=4), 10, 60)
-print('N=%d L=%d nres=%d  wavefront_res %.3f ms  jacobi_res %.3f ms  (gap %.0fx)'
+r.reset_storage(); wf = timeit(lambda: r.ordered_res(qref, q, n_newton=4), max(2, reps // 5), reps)
+r.reset_storage(); je = timeit(lambda: r.parallel_res(qref, q, iterations=3, n_newton=4), 10, 60)
+print('N=%d L=%d nres=%d  ordered_res %.3f ms  parallel_res %.3f ms  (gap %.0fx)'
       % (N, L, len(z['res_cell']), wf, je, wf / je))
 
-# accuracy: jacobi_res(k) vs exact wavefront_res at identical state.
+# accuracy: parallel_res(k) vs exact ordered_res at identical state.
 # NOTE: use TIME-VARYING forcing -- constant forcing settles to a steady state
 # where every scheme returns the same field and the error is trivially zero.
 big = torch.as_tensor(net.channelAlpha, dtype=torch.float32, device='cuda') > np.percentile(net.channelAlpha, 90)
@@ -39,9 +39,9 @@ def sf(t):
 r.reset_storage(); qref = torch.zeros(N, device='cuda'); acc = {1: [], 2: [], 3: [], 5: []}
 for t in range(120):
     qt = sf(t)
-    S0 = r.S.clone(); W = r.wavefront_res(qref, qt, n_newton=4); Sa = r.S.clone()
+    S0 = r.S.clone(); W = r.ordered_res(qref, qt, n_newton=4); Sa = r.S.clone()
     for k in acc:
-        r.S = S0.clone(); J = r.jacobi_res(qref, qt, sweeps=k, n_newton=4); acc[k].append(relerr(J, W))
+        r.S = S0.clone(); J = r.parallel_res(qref, qt, iterations=k, n_newton=4); acc[k].append(relerr(J, W))
     r.S = Sa; qref = W
-print('jacobi_res vs exact wavefront_res (big-river median rel err):',
+print('parallel_res vs exact ordered_res (big-river median rel err):',
       {k: round(float(np.mean(v[-20:])), 4) for k, v in acc.items()})

@@ -1,5 +1,5 @@
 """How the Kling-Gupta efficiency against the CWatM serial-C kernel improves with the number
-of Jacobi iterations, the river network it is measured on, and one hydrograph.
+of parallel iterations, the river network it is measured on, and one hydrograph.
 
 (a-d) KGE after one, three, seven and twenty iterations, on one shared scale so the panels
 compare; (e) annual-mean discharge of the serial solution, the Amazon mouth circled;
@@ -168,7 +168,7 @@ for i, k in enumerate(KS, start=2):
     sc = axs[i].scatter(lon[o], lat[o], c=v[o], s=0.05, cmap=CMAP_K, norm=NORM,
                         linewidths=0, transform=ccrs.PlateCarree(),
                         rasterized=True, zorder=2)
-    axs[i].format(title='SURGE with %d Jacobi iteration%s' % (k, '' if k == 1 else 's'))
+    axs[i].format(title='SURGE with %d parallel iteration%s' % (k, '' if k == 1 else 's'))
     # at 8 pt the longer wording ran past the map frame; the caption says the statistics
     # are over the mapped cells
     # the summary sits in the open Atlantic, clear of both coasts. The explicit wording

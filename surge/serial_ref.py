@@ -8,8 +8,8 @@ the GPU_KWR_T5_SO environment variable, e.g.
 
     export GPU_KWR_T5_SO=/path/to/cwatm/hydrological_modules/routing_reservoirs/t5_linux.so
 
-Nothing else in surge depends on this module; the GPU wavefront scheme
-(TorchRouter.substep_wavefront) provides an equivalent machine-precision reference
+Nothing else in surge depends on this module; the GPU ordered scheme
+(TorchRouter.substep_ordered) provides an equivalent machine-precision reference
 without any external library.
 """
 import ctypes
@@ -28,7 +28,7 @@ def _lib():
             raise RuntimeError(
                 "CWatM serial kernel not found. Set GPU_KWR_T5_SO to the path of the "
                 "compiled t5 library from a CWatM build (GPL-3.0; not bundled here). "
-                "The GPU wavefront scheme is an equivalent reference if you cannot "
+                "The GPU ordered scheme is an equivalent reference if you cannot "
                 "build CWatM.")
         _LIB = ctypes.cdll.LoadLibrary(so)
         f64 = ndpointer(dtype=np.float64, flags='C_CONTIGUOUS')

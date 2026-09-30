@@ -1,10 +1,10 @@
-"""Bit-level accuracy oracle: compare the GPU Jacobi scheme (k=1..8) and the exact
-wavefront against CWatM's serial C kernel, on the same network geometry, driven by
+"""Bit-level accuracy oracle: compare the GPU parallel scheme (k=1..8) and the exact
+ordered scheme against CWatM's serial C kernel, on the same network geometry, driven by
 a real daily-runoff series. Isolates the numerical scheme (same discretisation on
-both sides), so it measures exactly what the k-sweep truncation costs.
+both sides), so it measures exactly what the truncation at k iterations costs.
 
 Requires the CWatM serial kernel: set GPU_KWR_T5_SO (see surge/serial_ref.py).
-Without it, the GPU wavefront scheme is itself a machine-precision reference.
+Without it, the GPU ordered scheme is itself a machine-precision reference.
 
 Usage:
     export GPU_KWR_T5_SO=/path/to/t5_linux.so
@@ -34,14 +34,14 @@ r_g = torch.as_tensor(runoff, device="cuda", dtype=torch.float64)
 fac_g = torch.as_tensor(factor, device="cuda", dtype=torch.float64)
 
 
-def route_gpu(sweeps, q0):
+def route_gpu(iterations, q0):
     q = q0.clone()
     daily = np.zeros((ndays, N), np.float32)
     for d in range(ndays):
         qd = r_g[:, d] * fac_g
         acc = torch.zeros(N, device="cuda", dtype=torch.float64)
         for _ in range(nsub):
-            q = router.substep_jacobi(q, qd, sweeps=sweeps, n_newton=4)
+            q = router.substep_parallel(q, qd, iterations=iterations, n_newton=4)
             acc += q
         daily[d] = (acc / nsub).cpu().numpy()
     return q, daily

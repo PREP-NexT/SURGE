@@ -1,9 +1,8 @@
-"""Adding the full GRanD dam set (7,320 dams -> ~6.5-7.3k reservoir cells,
-6,881 km3) to the three schemes. (a) per-substep cost WITH reservoirs across
-resolutions -- the wavefront/Jacobi gap is unchanged and reservoirs add only a
-few percent; (b) Jacobi still reproduces the EXACT wavefront with reservoirs
-active (big-river relative error vs sweeps, with vs without dams). A100, fp32.
-Data: figure_data/scheme_bench.json (bench_reservoir.py on ASPIRE A100)."""
+"""What the full GRanD dam set costs. (a) the wall-clock the dams add to SURGE
+and to GPU-ordered, as a percentage of the run without them, at three
+resolutions; (b) the criterion with and without the dams against the number of
+iterations, which the dams leave unchanged. A100.
+Data: figure_data/reservoir_timing.json, figure_data/reservoir_convergence.json."""
 import os, sys, json, numpy as np
 import matplotlib; matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -18,22 +17,14 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 FIG = os.path.join(_HERE, '..', 'figures'); os.makedirs(FIG, exist_ok=True)
 DATA = os.path.join(_HERE, '..', 'figure_data')
 
-J = json.load(open(os.path.join(DATA, 'scheme_bench.json')))
-B = {r['res']: r for r in J['withdam']}
-A = {r['res']: r for r in J['nodam']}
 order = ['5\'', '3\'', '1\'']
-cells = np.array([B[r]['N'] for r in order], float)
-wfB = np.array([B[r]['wavefront'] for r in order]); jeB = np.array([B[r]['jacobi_eager'] for r in order])
-jfB = np.array([B[r]['jacobi_fused'] for r in order])
-wfA = np.array([A[r]['wavefront'] for r in order]); jeA = np.array([A[r]['jacobi_eager'] for r in order])
-jfA = np.array([A[r]['jacobi_fused'] for r in order])
-C_WF = '#D55E00'; C_JE = '#E69F00'; C_JF = '#0072B2'
+C_ORDERED = '#D55E00'; C_SURGE = '#0072B2'
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(PW, 2.42 * PW / 5.3))
 # (a) what the dams actually cost: percentage added, per scheme and resolution
 RT = json.load(open(os.path.join(DATA, 'reservoir_timing.json')))['rows']
-schemes = [('gpu_ordered', C_WF, 'GPU-ordered'),
-           ('surge', C_JF, 'SURGE')]
+schemes = [('gpu_ordered', C_ORDERED, 'GPU-ordered'),
+           ('surge', C_SURGE, 'SURGE')]
 xpos = np.arange(len(order)); w = 0.34
 for s, (key, col, lab) in enumerate(schemes):
     tot = [100.0 * (RT[r][key]['dams'] / RT[r][key]['none'] - 1.0) for r in order]

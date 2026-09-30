@@ -1,12 +1,14 @@
 """PyTorch (GPU / batched / differentiable) kinematic-wave routing for CWatM.
 
-Two parallel schemes replacing the serial topological sweep in t5.cpp:
+Two schemes replace the serial upstream-to-downstream traversal of t5.cpp. The
+paper calls them the partly parallel and the fully parallel scheme:
 
-* wavefront : exact — processes topological levels in order, all cells in a
-  level in parallel. Bit-comparable to the serial code (modulo fp sum order).
-* jacobi    : approximate — k fully-parallel sweeps over ALL cells; sweep k
-  propagates upstream information k levels. Since the kinematic wave moves
-  only ~1 cell per routing substep (Courant ~ O(1)), a few sweeps suffice.
+* ordered  : takes the topological levels in turn and computes every cell of a
+  level at once, so it returns the serial solution (modulo fp sum order).
+* parallel : takes k iterations over every cell at once, and iteration k
+  carries upstream information k levels down. The iterations a network needs
+  follow its Courant number, two on a 30 arc-minute network and thirty on a
+  1 arc-minute one.
 
 Both share the same vectorised Newton solver (IterateToQnew in t5.cpp).
 All ops are differentiable -> autograd gives dQ/d(alpha, sideflow, ...).
@@ -60,7 +62,7 @@ class TorchRouter:
         return torch.where(zero, torch.zeros_like(qk), qk.clamp_min(0.0))
 
     # -------------------------------------------------------------- schemes
-    def substep_wavefront(self, qold, q, alpha=None, n_newton=10):
+    def substep_ordered(self, qold, q, alpha=None, n_newton=10):
         """Exact level-scheduled substep. qold, q: (N,) or (B, N)."""
         qnew = torch.zeros_like(qold + q)
         for l in range(self.net.n_levels):
@@ -77,10 +79,10 @@ class TorchRouter:
                 alpha=a_full[..., cells], n_iter=n_newton, dx=self.dx[cells])
         return qnew
 
-    def substep_jacobi(self, qold, q, alpha=None, sweeps=3, n_newton=6):
-        """k fully-parallel Jacobi sweeps. qold, q: (N,) or (B, N)."""
+    def substep_parallel(self, qold, q, alpha=None, iterations=3, n_newton=6):
+        """k iterations over every cell at once. qold, q: (N,) or (B, N)."""
         qk = qold.clamp_min(0.0)
-        for _ in range(sweeps):
+        for _ in range(iterations):
             qin = torch.zeros_like(qk)
             qin.index_add_(-1, self.edge_dst, qk.index_select(-1, self.edge_src))
             qk = self.newton(qin, qold, q, alpha=alpha, n_iter=n_newton)
@@ -111,21 +113,21 @@ class TorchRouter:
         self._blocks[key] = blocks
         return blocks
 
-    def substep_blocked_gs(self, qold, q, alpha=None, n_blocks=8, sweeps=3,
+    def substep_blocked_gs(self, qold, q, alpha=None, n_blocks=8, iterations=3,
                            n_newton=4):
-        """Blocked Gauss-Seidel over level ranges, Jacobi inside each block.
+        """Blocked Gauss-Seidel over level ranges, parallel inside each block.
 
         Blocks are processed upstream-to-downstream, so within-substep
         information propagates the full network depth at the FLOP cost of
-        `sweeps` global Jacobi sweeps; truncation error is confined to
-        within-block coupling deeper than `sweeps` levels.
+        `iterations` global iterations; truncation error is confined to
+        within-block coupling deeper than `iterations` levels.
         """
         blocks = self._build_blocks(n_blocks)
         a_full = self.alpha if alpha is None else alpha
         qk = (qold + q * 0).clamp_min(0.0)   # broadcast to common shape
         for cells, src, dst in blocks:
             a_b = a_full[..., cells] if a_full.shape[-1] == self.n else a_full
-            for _ in range(sweeps):
+            for _ in range(iterations):
                 qin = torch.zeros_like(qk)
                 qin.index_add_(-1, dst, qk.index_select(-1, src))
                 qk = qk.clone()
@@ -134,7 +136,7 @@ class TorchRouter:
                     alpha=a_b, n_iter=n_newton, dx=self.dx[cells])
         return qk
 
-    # ------------------------------------------------------- focused sweeps
+    # ------------------------------------------------------- focused iterations
     def _build_deep(self, thresh):
         key = int(thresh)
         if not hasattr(self, '_deep'):
@@ -148,22 +150,22 @@ class TorchRouter:
                                t(self.net.edge_dst[sel]))
         return self._deep[key]
 
-    def substep_focused(self, qold, q, alpha=None, sweeps=3, deep_sweeps=5,
+    def substep_focused(self, qold, q, alpha=None, iterations=3, deep_iterations=5,
                         n_newton=4, deep_thresh=None):
-        """Jacobi sweeps everywhere, then extra sweeps on deep cells only.
+        """Iterations everywhere, then extra iterations on deep cells only.
 
-        Cells with topological level <= `sweeps` are exact after the global
-        sweeps; the extra sweeps push the truncation depth of the remaining
-        (deep) cells to sweeps+deep_sweeps at ~quarter of the per-sweep cost
+        Cells with topological level <= `iterations` are exact after the global
+        iterations; the extra iterations push the truncation depth of the remaining
+        (deep) cells to iterations+deep_iterations at ~quarter of the per-iteration cost
         (deep cells are ~27% of the domain for thresh=3).
         """
-        thresh = sweeps if deep_thresh is None else deep_thresh
+        thresh = iterations if deep_thresh is None else deep_thresh
         deep, esrc_d, edst_d = self._build_deep(thresh)
         a_full = self.alpha if alpha is None else alpha
         a_d = a_full[..., deep] if a_full.shape[-1] == self.n else a_full
-        qk = self.substep_jacobi(qold, q, alpha=alpha, sweeps=sweeps,
+        qk = self.substep_parallel(qold, q, alpha=alpha, iterations=iterations,
                                  n_newton=n_newton)
-        for _ in range(deep_sweeps):
+        for _ in range(deep_iterations):
             qin = torch.zeros_like(qk)
             qin.index_add_(-1, edst_d, qk.index_select(-1, esrc_d))
             qk = qk.clone()
@@ -173,13 +175,13 @@ class TorchRouter:
         return qk
 
     # ----------------------------------------------------------------- runs
-    def run(self, q0, sideflow, scheme='jacobi', checkpoint_every=0, **kw):
+    def run(self, q0, sideflow, scheme='parallel', checkpoint_every=0, **kw):
         """Route a (T_substeps, N) or (T, B, N) sideflow series. Returns (T, ..., N) Q.
 
         checkpoint_every > 0 wraps blocks of substeps in torch.utils.checkpoint
         (recompute-on-backward) so long differentiable runs fit in VRAM.
         """
-        step = {'jacobi': self.substep_jacobi, 'wavefront': self.substep_wavefront,
+        step = {'parallel': self.substep_parallel, 'ordered': self.substep_ordered,
                 'blocked_gs': self.substep_blocked_gs,
                 'focused': self.substep_focused}[scheme]
         T = sideflow.shape[0]

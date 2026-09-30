@@ -38,7 +38,7 @@ sys.path.insert(0, os.path.dirname(HERE))
 from surge.network import RoutingNetwork
 from surge.kinematic_torch import TorchRouter
 
-SWEEPS = int(os.environ.get('SURGE_SWEEPS', 3))   # the iteration count SURGE and CPU-parallel run;
+ITERATIONS = int(os.environ.get('SURGE_ITERATIONS', 3))   # the iteration count SURGE and CPU-parallel run;
 NEWTON = 4                                        # each network needs its own, so it is configurable
 RUNOFF_MMDAY = 2.0
 WARMUP = int(os.environ.get('TIMING_WARMUP', 10))
@@ -79,14 +79,14 @@ def steady(net_path, out_path):
     while step < STEADY_MAX_DAYS * nsub:
         prev = q.clone()
         for _ in range(100):
-            q = r.substep_jacobi(q, qd, sweeps=SWEEPS, n_newton=NEWTON)
+            q = r.substep_parallel(q, qd, iterations=ITERATIONS, n_newton=NEWTON)
         step += 100
         wet = q > 1.0
         change = float(((q - prev).abs() / q.clamp_min(1e-3))[wet].max()) if bool(wet.any()) else np.inf
         if step % 2000 == 0:
             print('  %s step %d (%.1f days): max relative change %.2e (%.0fs)'
                   % (os.path.basename(net_path), step, step / nsub, change, time.time() - t0), flush=True)
-        if step >= net.n_levels // SWEEPS + 100 and change < STEADY_TOL:
+        if step >= net.n_levels // ITERATIONS + 100 and change < STEADY_TOL:
             break
     np.savez(out_path, q=q.double().cpu().numpy(), runoff_mmday=RUNOFF_MMDAY, steps=step,
              max_relative_change_per_100_steps=change, net=os.path.basename(net_path),
@@ -111,12 +111,12 @@ def make_step(config, net, qd_np, res=None, threads=24):
                 z = np.load(res)
                 r.set_reservoirs(z['res_cell'], z['cap_m3'], z['rmean'])
             r.reset_storage()
-            fn = (lambda a, b: r.jacobi_res(a, b, sweeps=SWEEPS, n_newton=NEWTON)) if config == 'surge' \
-                else (lambda a, b: r.wavefront_res(a, b, n_newton=NEWTON))
+            fn = (lambda a, b: r.parallel_res(a, b, iterations=ITERATIONS, n_newton=NEWTON)) if config == 'surge' \
+                else (lambda a, b: r.ordered_res(a, b, n_newton=NEWTON))
         else:
             r = TorchRouter(net, device=dev, dtype=torch.float32)
-            fn = (lambda a, b: r.substep_jacobi(a, b, sweeps=SWEEPS, n_newton=NEWTON)) if config == 'surge' \
-                else (lambda a, b: r.substep_wavefront(a, b, n_newton=NEWTON))
+            fn = (lambda a, b: r.substep_parallel(a, b, iterations=ITERATIONS, n_newton=NEWTON)) if config == 'surge' \
+                else (lambda a, b: r.substep_ordered(a, b, n_newton=NEWTON))
         compiled = False
         if config == 'surge':
             fn = torch.compile(fn); compiled = True
@@ -127,7 +127,7 @@ def make_step(config, net, qd_np, res=None, threads=24):
         torch.set_num_threads(threads)
         r = TorchRouter(net, device='cpu', dtype=torch.float32)
         qd = torch.as_tensor(qd_np, dtype=torch.float32)
-        return (lambda q: r.substep_jacobi(q, qd, sweeps=SWEEPS, n_newton=NEWTON)), \
+        return (lambda q: r.substep_parallel(q, qd, iterations=ITERATIONS, n_newton=NEWTON)), \
             (lambda s: torch.as_tensor(s, dtype=torch.float32)), (lambda: None), \
             dict(compiled=False, device='cpu', threads=threads)
     if config == 'cpu_serial':
@@ -197,7 +197,7 @@ def cmd_time(argv):
         row['ms_per_step'] = ordered[len(ordered) // 2]
     row.update(net=os.path.basename(net_path), state=os.path.basename(state_path),
                reservoir_file=(res if res == 'empty' else os.path.basename(res)) if res else None, runoff_mmday=RUNOFF_MMDAY,
-               sweeps=SWEEPS, newton=NEWTON, **info)
+               iterations=ITERATIONS, newton=NEWTON, **info)
     json.dump(row, open(out, 'w'), indent=1)
     print('%-12s %-32s %10d cells %5d lvl  %s%10.4f ms/step (blocks spread %.1f%%)  load %.1f -> %.1f  -> %s'
           % (config, os.path.basename(net_path), net.n_cells, net.n_levels,
@@ -238,7 +238,7 @@ def cmd_time_basins(argv):
         if torch.cuda.is_available():
             torch._dynamo.reset(); torch.cuda.empty_cache()
     json.dump(dict(config=config, source=os.path.basename(src), state=os.path.basename(state_path),
-                   runoff_mmday=RUNOFF_MMDAY, sweeps=SWEEPS, newton=NEWTON, warmup_steps=WARMUP,
+                   runoff_mmday=RUNOFF_MMDAY, iterations=ITERATIONS, newton=NEWTON, warmup_steps=WARMUP,
                    timed_steps=TIMED, rows=rows, **info), open(out, 'w'), indent=1)
     print('->', out, flush=True)
 

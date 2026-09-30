@@ -1,5 +1,5 @@
 """Single-run throughput per routing substep: A100 eager vs torch.compile-fused
-Jacobi (k=3), for one or more routing-network .npz files. Reproduces the
+the parallel scheme (k=3), for one or more routing-network .npz files. Reproduces the
 resolution-scaling result (speedup grows with network size).
 
 Usage:
@@ -24,15 +24,15 @@ for path in sys.argv[1:]:
     qd = torch.full((N,), 1e-4, device="cuda")
 
     for _ in range(10):
-        q = r.substep_jacobi(q, qd, sweeps=3, n_newton=4)
+        q = r.substep_parallel(q, qd, iterations=3, n_newton=4)
     torch.cuda.synchronize()
     t0 = time.time()
     for _ in range(60):
-        q = r.substep_jacobi(q, qd, sweeps=3, n_newton=4)
+        q = r.substep_parallel(q, qd, iterations=3, n_newton=4)
     torch.cuda.synchronize()
     eager = (time.time() - t0) / 60 * 1e3
 
-    step = torch.compile(lambda a, b: r.substep_jacobi(a, b, sweeps=3, n_newton=4))
+    step = torch.compile(lambda a, b: r.substep_parallel(a, b, iterations=3, n_newton=4))
     for _ in range(30):
         q = step(q, qd)
     torch.cuda.synchronize()

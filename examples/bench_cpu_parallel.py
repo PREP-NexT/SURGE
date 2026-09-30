@@ -1,4 +1,4 @@
-"""Time the barrier-free Jacobi solver on the CPU (the paper's CPU-parallel).
+"""Time the barrier-free parallel solver on the CPU (the paper's CPU-parallel).
 
 The same fixed-point solver used on the GPU is run multi-threaded through
 torch-CPU, giving a same-algorithm CPU baseline for the GPU speedup. The paper's
@@ -37,12 +37,12 @@ def bench(nthreads, spin=40, warm=3, reps=20):
     q = torch.zeros(N, dtype=torch.float32)
     ql = torch.as_tensor(q_lat, dtype=torch.float32)
     for _ in range(spin):                                    # reach a flowing steady state
-        q = r.substep_jacobi(q, ql, sweeps=3, n_newton=4)
+        q = r.substep_parallel(q, ql, iterations=3, n_newton=4)
     for _ in range(warm):
-        r.substep_jacobi(q, ql, sweeps=3, n_newton=4)
+        r.substep_parallel(q, ql, iterations=3, n_newton=4)
     t0 = time.time()
     for _ in range(reps):
-        q = r.substep_jacobi(q, ql, sweeps=3, n_newton=4)
+        q = r.substep_parallel(q, ql, iterations=3, n_newton=4)
     return (time.time() - t0) / reps * 1e3                    # ms per substep
 
 

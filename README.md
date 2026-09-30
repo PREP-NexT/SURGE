@@ -20,7 +20,7 @@ used by global hydrological models (CWatM, LISFLOOD, PCR-GLOBWB, wflow).
 Routing normally advances cell by cell down the drainage network in strict
 upstream-to-downstream order, a serial recursion that has kept it on a single
 CPU core. SURGE decouples every cell from its upstream neighbours by recasting
-the recursion as a convergent Jacobi fixed-point iteration: the whole network
+the recursion as a convergent fixed-point iteration: the whole network
 is updated at once, and a fixed, small number of iterations reproduces the
 serial solution.
 
@@ -91,14 +91,14 @@ A CUDA-capable GPU is required for the GPU benchmarks; the solver also runs
 ```
 surge/                       Solver package
 ├── network.py               Routing-network loader (levels, edge lists)
-├── kinematic_torch.py       Fixed-point and wavefront substeps, Newton kernel
+├── kinematic_torch.py       Parallel and ordered substeps, Newton kernel
 ├── reservoir.py             Storage-based reservoir release (GRanD)
 └── serial_ref.py            Bridge to CWatM's serial C kernel (reference)
 build/                       Construct networks from public flow-direction maps
 ├── build_multiresolution.py 30/15/5 arc-minute networks (CWatM/Eilander maps)
 └── build_from_cama.py       3/1 arc-minute networks (CaMa-Flood maps)
 examples/                    Runners and benchmarks (accuracy, depth
-                             independence, resolution scaling, wavefront,
+                             independence, resolution scaling, ordered scheme,
                              reservoirs, CPU-parallel baseline)
 paper/                       Figure scripts, figure data, and figures of the
                              manuscript
@@ -119,10 +119,10 @@ q  = torch.zeros(N, device="cuda")                    # discharge state
 qd = torch.full((N,), 1e-4, device="cuda")            # lateral inflow (m^2/s)
 
 # one routing time step, the iterations the network needs (seven at 5 arc-minutes)
-q = router.substep_jacobi(q, qd, sweeps=7, n_newton=4)
+q = router.substep_parallel(q, qd, iterations=7, n_newton=4)
 
 # exact level-scheduled traversal (machine-precision reference)
-q_exact = router.substep_wavefront(q, qd)
+q_exact = router.substep_ordered(q, qd)
 ```
 
 State and parameters broadcast over a leading ensemble axis (`(B, N)`
@@ -149,7 +149,7 @@ python examples/route_runoff.py  net.npz runoff.npy out.npy   # basic end use
 python examples/bench_accuracy_vs_serial.py net.npz runoff.npy
 python examples/bench_depth_independence.py static/*.npz
 python examples/bench_resolution_scaling.py static/*.npz
-python examples/bench_wavefront.py static/*.npz
+python examples/bench_ordered.py static/*.npz
 python examples/bench_reservoir.py  net.npz res_grand.npz     # + map_grand_dams.py
 python examples/bench_cpu_parallel.py net.npz 24              # CPU baseline
 ```
@@ -169,7 +169,7 @@ python examples/bench_unified_timing.py time gpu_ordered net.npz steady.npz out.
 ```
 
 The configurations are `surge`, `gpu_ordered`, `cpu_parallel` and `cpu_serial`,
-and `SURGE_SWEEPS` sets the iteration count each network runs at. The
+and `SURGE_ITERATIONS` sets the iteration count each network runs at. The
 `cpu_serial` configuration calls the CWatM kernel, so it needs `GPU_KWR_T5_SO`.
 
 ### 3. Reproduce the paper figures
