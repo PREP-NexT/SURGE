@@ -3,7 +3,7 @@ the parallel scheme (k=3), for one or more routing-network .npz files. Reproduce
 resolution-scaling result (speedup grows with network size).
 
 Usage:
-    python examples/bench_resolution_scaling.py static/routing_static_*.npz
+    python experiments/bench_resolution_scaling.py static/routing_static_*.npz
 """
 import os
 import sys

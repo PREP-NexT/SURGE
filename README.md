@@ -97,9 +97,13 @@ surge/                       Solver package
 build/                       Construct networks from public flow-direction maps
 ├── build_multiresolution.py 30/15/5 arc-minute networks (CWatM/Eilander maps)
 └── build_from_cama.py       3/1 arc-minute networks (CaMa-Flood maps)
-examples/                    Runners and benchmarks (accuracy, depth
-                             independence, resolution scaling, ordered scheme,
-                             reservoirs, CPU-parallel baseline)
+examples/                    Using SURGE: routing a runoff series, and
+                             putting the GRanD dams on a network
+experiments/                 Reproducing the paper: accuracy against the serial
+                             kernel, iterations against network depth,
+                             resolution scaling, the cost of the reservoirs,
+                             the CPU-parallel baseline, and the one timing
+                             protocol behind every reported number
 paper/                       Figure scripts, figure data, and figures of the
                              manuscript
 environment.yml              Conda environment specification
@@ -146,25 +150,25 @@ Data sources are documented in the manuscript's Open Research section.
 
 ```bash
 python examples/route_runoff.py  net.npz runoff.npy out.npy   # basic end use
-python examples/bench_accuracy_vs_serial.py net.npz runoff.npy
-python examples/bench_depth_independence.py static/*.npz
-python examples/bench_resolution_scaling.py static/*.npz
-python examples/bench_ordered.py static/*.npz
-python examples/bench_reservoir.py  net.npz res_grand.npz     # + map_grand_dams.py
-python examples/bench_cpu_parallel.py net.npz 24              # CPU baseline
+python experiments/bench_accuracy_vs_serial.py net.npz runoff.npy
+python experiments/bench_depth_independence.py static/*.npz
+python experiments/bench_resolution_scaling.py static/*.npz
+python experiments/bench_ordered.py static/*.npz
+python experiments/bench_reservoir.py  net.npz res_grand.npz     # + map_grand_dams.py
+python experiments/bench_cpu_parallel.py net.npz 24              # CPU baseline
 ```
 
 The timings reported in the paper come from one protocol, in
-`examples/bench_unified_timing.py`: a uniform runoff of 2 mm/day, the steady
+`experiments/bench_unified_timing.py`: a uniform runoff of 2 mm/day, the steady
 discharge field of that forcing shared by every configuration, ten warm-up time
 steps and then 600 timed ones, with `--repeats` runs of each configuration. It
 takes the network and that steady state, and writes one JSON file per
 configuration.
 
 ```bash
-python examples/bench_unified_timing.py steady net.npz steady.npz
-python examples/bench_unified_timing.py time surge net.npz steady.npz out.json --repeats 3
-python examples/bench_unified_timing.py time gpu_ordered net.npz steady.npz out.json \
+python experiments/bench_unified_timing.py steady net.npz steady.npz
+python experiments/bench_unified_timing.py time surge net.npz steady.npz out.json --repeats 3
+python experiments/bench_unified_timing.py time gpu_ordered net.npz steady.npz out.json \
     --res res_grand.npz --repeats 3
 ```
 

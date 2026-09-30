@@ -4,7 +4,7 @@ bracket the operational Courant regime. If the k needed for a given accuracy is
 ~constant while the level count varies, depth-independence holds.
 
 Usage:
-    python examples/bench_depth_independence.py static/routing_static_*.npz
+    python experiments/bench_depth_independence.py static/routing_static_*.npz
 """
 import os
 import sys

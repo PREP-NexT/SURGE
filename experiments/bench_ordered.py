@@ -1,8 +1,8 @@
-"""Per-substep wall-clock of the three schemes (paper Section 3.5, Fig. 6):
+"""Per-substep wall-clock of the schemes (paper section 4.2, Figure 5):
 the ordered scheme (O(L) level barriers) vs the parallel scheme k=3 (eager & fused), fp32.
 Same protocol as bench_resolution_scaling.py.
 
-    python examples/bench_ordered.py static/routing_static_*.npz
+    python experiments/bench_ordered.py static/routing_static_*.npz
 """
 import os, sys, time, numpy as np, torch
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

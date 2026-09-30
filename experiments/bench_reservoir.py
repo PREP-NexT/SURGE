@@ -1,8 +1,8 @@
-"""Three schemes WITH real GRanD reservoirs (paper Section 3.6, Fig. 7): per-substep
+"""The schemes with the real GRanD reservoirs (paper section 4.3, Figure 7): per-substep
 cost of ordered_res vs parallel_res (eager & fused), and whether reservoirs change
 the parallel-vs-exact agreement. Needs a res_*.npz from map_grand_dams.py.
 
-    python examples/bench_reservoir.py net.npz res.npz
+    python experiments/bench_reservoir.py net.npz res.npz
 """
 import os, sys, time, numpy as np, torch
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

@@ -1,4 +1,4 @@
-"""Map the GRanD v1.3 dam set onto a routing network (paper Section 3.6).
+"""Map the GRanD v1.3 dam set onto a routing network (paper section 3.1).
 
 Dam locations/capacity/mean-discharge come from GRanD v1.3, georeferenced by GeoDAR
 (Wang et al. 2022, ESSD; CC-BY). Download GeoDAR_v10_v11.zip from

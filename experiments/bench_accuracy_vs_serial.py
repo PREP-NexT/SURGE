@@ -8,7 +8,7 @@ Without it, the GPU ordered scheme is itself a machine-precision reference.
 
 Usage:
     export GPU_KWR_T5_SO=/path/to/t5_linux.so
-    python examples/bench_accuracy_vs_serial.py routing_static_global.npz runoff_2010.npy
+    python experiments/bench_accuracy_vs_serial.py routing_static_global.npz runoff_2010.npy
 """
 import os
 import sys

@@ -6,7 +6,7 @@ torch-CPU, giving a same-algorithm CPU baseline for the GPU speedup. The paper's
 figure is CPU-serial (the 1-core C kernel) divided by this per-substep time.
 
 Usage:
-    python examples/bench_cpu_parallel.py routing_static.npz [n_threads]
+    python experiments/bench_cpu_parallel.py routing_static.npz [n_threads]
 
 Reports per-substep wall-clock (k=3, 4 Newton iterations) at 1 thread and at
 n_threads (default 24), after a short spin-up, timed with the same
