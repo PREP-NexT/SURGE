@@ -1,24 +1,37 @@
-"""One year of 2010 routing at one resolution: the CWatM serial kernel as reference and
-SURGE at k = 1, 2, 3, 5, 8, 20, compared cell by cell, so the match can be compared across
-the five global river networks under the same runoff.
+"""One year of 2010 routing at one resolution: the CWatM serial kernel as the reference
+and SURGE at each iteration count asked for, compared cell by cell, so the match can be
+compared across the five global river networks under the same runoff.
 
 Every simulated field is kept: the daily mean of every cell for the spin-up year, the
-serial year and each SURGE year, as (365, cells) float32 arrays.
+serial year and each SURGE year, as (365, cells) float32 arrays. They are what the
+metrics stage reads, and keeping them is why a later question, such as another
+iteration count or another evaluation threshold, costs a metrics run and not a model
+run.
 
 Stages, in this order (serial and gpu can run at the same time):
   spin     GPU: one year at k = 8 from an empty network -> q0.npy, the start both sides
            share, and the daily means of the spin-up year
   serial   CPU: the serial kernel for one year from q0 -> daily means of every cell;
            checkpointed every CKPT_DAYS days, so a stopped run resumes
-  gpu      GPU: SURGE at each k for one year from q0 -> daily means of every cell;
-           an optional third argument lists the k to run, e.g. 1,2,3
+  gpu      GPU: SURGE at each k for one year from q0 -> daily means of every cell
+  ordered  GPU: the level-by-level solution, the reference where the serial kernel
+           cannot run, as with the reservoirs
   metrics  KGE, NSE, rRMSE and bias over C = {serial annual mean > C_MIN}, with the
            topological level, upstream river length [km] and Courant number of each cell;
            daily series kept for the cells above BIG_MIN
-Runoff: CWatM qtot of 2010 at 0.5 deg, read at the 0.5-deg cell holding each routing cell,
-as regrid_qtot_05min_local.py does for the 5 arc-minute network. Area-proxy geometry of the
-routing_static_<tag>.npz file. fp32 on the GPU, fp64 in the serial kernel.
-Usage: bench_year_resolution.py <tag> <spin|serial|gpu|metrics> [k list], e.g. 30min_area gpu 1,2,3
+
+The iteration counts come from the third argument or from YEAR_KS, and the paper swept
+them densely enough to read the crossing off each curve: 1 to 10 and 20 on the 30, 15
+and 5 arc-minute networks, out to 14, 16, 18, 20 at 3 arc-minutes, and out to 32 at
+1 arc-minute, where the network needs thirty.
+
+Runoff: CWatM qtot of 2010 at 0.5 deg, read at the 0.5-deg cell holding each routing
+cell, as examples/regrid_runoff.py does. The channel geometry is the one the
+routing_<tag>.npz file carries. fp32 on the GPU, fp64 in the serial kernel.
+
+    export SURGE_DATA=/path/to/the/networks/and/runoff
+    python experiments/bench_year_resolution.py 30min spin
+    python experiments/bench_year_resolution.py 30min gpu 1,2,3,4,5,6,7,8,9,10,20
 """
 import os, sys, time, json
 import numpy as np
@@ -35,7 +48,8 @@ K_ARG = sys.argv[3] if len(sys.argv) > 3 else None
 NPZ = '%s/routing_%s.npz' % (DATA, TAG)
 OUT = os.environ.get('YEAR_OUT', '%s/year_resolution' % DATA) + '/' + TAG
 os.makedirs(OUT, exist_ok=True)
-KS = tuple(int(x) for x in os.environ.get('YEAR_KS', '1,2,3,5,8,20').split(','))   # metrics runs over these
+KS = tuple(int(x) for x in os.environ.get('YEAR_KS', '1,2,3,4,5,6,7,8,9,10,20').split(','))
+# the counts the metrics stage reads back; give the gpu stage the same list
 PART = os.environ.get('METRICS_PART', '')   # a non-empty name writes this part of the k list
 # on its own, as summary_<part>.json and metrics_<part>.npz, for merge_metrics_parts.py
 C_MIN, BIG_MIN = 100.0, 10000.0
