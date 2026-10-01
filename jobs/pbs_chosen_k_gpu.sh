@@ -7,10 +7,10 @@
 #PBS -P ${PBS_PROJECT:-your_project}
 #PBS -j oe
 #PBS -o logs/
-# The GPU side of the timings each river network needs at its own iteration count:
-# 2, 3, 7, 11 and 30 from 30 arcmin to 1 arcmin. The sweeps already cover 2, 3, 7 and 11,
-# so this fills in 1 arc-minute at k = 30, the reservoir runs at the chosen k, and the
-# 26 basins at k = 30. Protocol unchanged: 2 mm/day steady state, 10 warm-up steps, 600 timed.
+# The GPU timings that the sweeps do not cover: the reservoirs at the count each network
+# needs, and the 26 basins at the thirty the 1 arc-minute network needs. The 1 arc-minute
+# line is here as well, because the sweep that was run first asked for twenty-nine.
+# Protocol unchanged: 2 mm/day steady state, 10 warm-up steps, 600 timed.
 set -e
 A=${SURGE_REPO:-$PBS_O_WORKDIR}
 cd $A

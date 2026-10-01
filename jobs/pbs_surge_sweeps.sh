@@ -10,7 +10,9 @@
 # SURGE timed at several iteration counts, on a whole A100 node so nothing else shares its CPU
 # cores, under the same protocol as the k = 3 timings: the steady state of 2 mm/day, 10 warm-up
 # steps, then the mean over 600 steps. Each network needs its own k to match the serial solution
-# to the same degree, so the paper needs the cost at those k as well as at k = 3.
+# to the same degree, so the paper needs the cost at those k as well as at k = 3. The counts are
+# the ones Table 6 reports, 2, 3, 7, 11 and 30, and every network is timed at all of them so the
+# cost of an iteration can be read across resolutions.
 set -e
 A=${SURGE_REPO:-$PBS_O_WORKDIR}
 cd $A
@@ -23,7 +25,7 @@ O=timing/aspire_sweeps
 mkdir -p $O
 echo "=== SURGE at several k, exclusive node $(hostname), $(date) ==="
 for n in 30min 15min 05min 03min 01min; do
-  for k in 2 3 7 11 29; do
+  for k in 2 3 7 11 30; do
     SURGE_ITERATIONS=$k python -u $B time surge $D/routing_$n.npz $S/steady_$n.npz $O/surge_k${k}_$n.json
   done
 done
