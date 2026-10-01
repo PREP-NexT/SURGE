@@ -1,19 +1,33 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite the paper below."
-title: "gpu_kwr: GPU-parallel differentiable kinematic-wave river routing"
+title: "SURGE: Scalable Upstream-decoupled Routing on GPU-Engine"
+abstract: >-
+  A GPU-parallel solver for the implicit kinematic-wave river routing of global
+  hydrological models. The serial upstream-to-downstream recursion is recast as a
+  convergent fixed-point iteration, so the whole network is updated at once and a
+  small number of iterations returns the serial solution.
 authors:
   - family-names: Liu
     given-names: Zhanwei
+    affiliation: "National University of Singapore"
   - family-names: He
     given-names: Xiaogang
-repository-code: "https://github.com/Zhanwei-Liu/gpu-kinematic-wave-routing"
+    affiliation: "National University of Singapore"
+repository-code: "https://github.com/PREP-NexT/SURGE"
 license: GPL-3.0-or-later
+keywords:
+  - river routing
+  - kinematic wave
+  - GPU
+  - global hydrological model
+  - differentiable modelling
 preferred-citation:
   type: article
-  title: "Parallelizing kinematic-wave river routing on the GPU via a convergent fixed-point reformulation"
+  title: "SURGE: a GPU-parallel kinematic-wave river routing model"
   authors:
     - family-names: Liu
       given-names: Zhanwei
     - family-names: He
       given-names: Xiaogang
   year: 2026
+  notes: "In preparation"
