@@ -159,13 +159,16 @@ python examples/map_grand_dams.py routing_05min.npz GRanD_v13.csv res_grand.npz 
 
 The year the paper reports, at one resolution, runs in four stages, each writing
 what the next one reads. The serial stage is the long one, and it is the only
-stage that needs the CWatM kernel.
+stage that needs the CWatM kernel. The gpu stage needs no list of iteration
+counts: it walks k upwards against the serial year, stops one count past the one
+whose 5th percentile KGE reaches 0.99, and reports what the network needs, which
+is two at 30 arc-minutes and thirty at 1 arc-minute.
 
 ```bash
 export SURGE_DATA=/path/to/the/networks/and/runoff
 python experiments/bench_year_resolution.py 05min spin      # a year to settle the field
 python experiments/bench_year_resolution.py 05min serial    # the reference year
-python experiments/bench_year_resolution.py 05min gpu 1,2,3,5,7,11
+python experiments/bench_year_resolution.py 05min gpu       # walks k up to the crossing
 python experiments/bench_year_resolution.py 05min metrics   # KGE, NSE and bias per cell
 python experiments/bench_metric_maps.py routing_05min.npz runoff.npy maps.npz
 python experiments/check_reservoir_massbalance.py           # the storage stays in bounds

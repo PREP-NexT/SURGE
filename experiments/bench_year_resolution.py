@@ -13,17 +13,22 @@ Stages, in this order (serial and gpu can run at the same time):
            share, and the daily means of the spin-up year
   serial   CPU: the serial kernel for one year from q0 -> daily means of every cell;
            checkpointed every CKPT_DAYS days, so a stopped run resumes
-  gpu      GPU: SURGE at each k for one year from q0 -> daily means of every cell
+  gpu      GPU: SURGE for one year from q0 at each k -> daily means of every cell.
+           Given no list, it walks k upwards against the reference year already on
+           disk, stops one count past the one that meets the criterion, and prints
+           the count the network needs. A list, as a third argument or in YEAR_KS,
+           runs exactly those counts and judges nothing.
   ordered  GPU: the level-by-level solution, the reference where the serial kernel
            cannot run, as with the reservoirs
   metrics  KGE, NSE, rRMSE and bias over C = {serial annual mean > C_MIN}, with the
            topological level, upstream river length [km] and Courant number of each cell;
            daily series kept for the cells above BIG_MIN
 
-The iteration counts come from the third argument or from YEAR_KS, and the paper swept
-them densely enough to read the crossing off each curve: 1 to 10 and 20 on the 30, 15
-and 5 arc-minute networks, out to 14, 16, 18, 20 at 3 arc-minutes, and out to 32 at
-1 arc-minute, where the network needs thirty.
+The counts the paper reports are 2, 3, 7, 11 and 30, from the coarsest network to the
+finest, and the gpu stage finds each of them on its own: it is the first count whose
+5th percentile KGE over the evaluated cells reaches YEAR_KGE, 0.99 as section 3.3 sets
+it. The stage then runs one count past it, which is the curve each panel of Figure 4
+carries across the threshold, and gives up at YEAR_KMAX, 50.
 
 Runoff: CWatM qtot of 2010 at 0.5 deg, read at the 0.5-deg cell holding each routing
 cell, as examples/regrid_runoff.py does. The channel geometry is the one the
@@ -31,7 +36,9 @@ routing_<tag>.npz file carries. fp32 on the GPU, fp64 in the serial kernel.
 
     export SURGE_DATA=/path/to/the/networks/and/runoff
     python experiments/bench_year_resolution.py 30min spin
-    python experiments/bench_year_resolution.py 30min gpu 1,2,3,4,5,6,7,8,9,10,20
+    python experiments/bench_year_resolution.py 30min serial
+    python experiments/bench_year_resolution.py 30min gpu       # finds k on its own
+    python experiments/bench_year_resolution.py 30min metrics
 """
 import os, sys, time, json
 import numpy as np
@@ -53,6 +60,8 @@ KS = tuple(int(x) for x in os.environ.get('YEAR_KS', '1,2,3,4,5,6,7,8,9,10,20').
 PART = os.environ.get('METRICS_PART', '')   # a non-empty name writes this part of the k list
 # on its own, as summary_<part>.json and metrics_<part>.npz, for merge_metrics_parts.py
 C_MIN, BIG_MIN = 100.0, 10000.0
+KGE_THRESHOLD = float(os.environ.get('YEAR_KGE', 0.99))   # the criterion of section 3.3
+KMAX = int(os.environ.get('YEAR_KMAX', 50))               # how far the gpu stage will go
 CKPT_DAYS = int(os.environ.get('SERIAL_CKPT_DAYS', 10))   # a 1 arc-minute day costs about
 # twelve minutes, so a wide checkpoint interval throws away hours when a job hits its walltime
 NEWTON = 4
@@ -63,6 +72,32 @@ YEAR_DAYS = int(os.environ.get('YEAR_DAYS', 0))   # GPU solution rather than the
 
 net = RoutingNetwork(NPZ)
 N, nsub = net.n_cells, net.noRoutingSteps
+
+
+def read_cells(path, cells):
+    """The given cells of a daily field, read in row blocks so the file is walked once,
+    front to back. Plain reads rather than a memory map, which faults one page at a time
+    and crawls on a large file."""
+    m = np.load(path, mmap_mode='r')
+    nd, nc, off = m.shape[0], m.shape[1], m.offset
+    assert m.dtype == np.float32, m.dtype
+    del m
+    blk = max(1, (2 << 30) // (nc * 4))            # about 2 GB a read
+    out = np.empty((nd, cells.size), np.float32)
+    with open(path, 'rb') as f:
+        f.seek(off)
+        for a in range(0, nd, blk):
+            b = min(a + blk, nd)
+            out[a:b] = np.frombuffer(f.read((b - a) * nc * 4), np.float32).reshape(b - a, nc)[:, cells]
+    return out
+
+
+def kge_per_cell(G, R):
+    """Kling-Gupta efficiency of a daily field against a reference, cell by cell."""
+    Gm, Gs, Rm, Rs = G.mean(0), G.std(0), R.mean(0), R.std(0)
+    r = ((G - Gm) * (R - Rm)).mean(0) / np.maximum(Gs * Rs, 1e-12)
+    return 1.0 - np.sqrt((r - 1) ** 2 + (Gs / np.maximum(Rs, 1e-12) - 1) ** 2
+                         + (Gm / np.maximum(Rm, 1e-9) - 1) ** 2)
 _d = np.load(NPZ)
 mask = _d['mask2d']
 RES = 360.0 / mask.shape[1]           # the maps span 360 deg of longitude, not always 180 of latitude
@@ -165,9 +200,33 @@ elif STAGE == 'serial':
 elif STAGE == 'gpu':
     torch, router, sideflow, dev, dt, jac, wave = gpu_setup()
     q0 = torch.as_tensor(np.load(OUT + '/q0.npy'), device=dev, dtype=dt)
-    for k in (KS if K_ARG is None else [int(x) for x in K_ARG.split(',')]):
+
+    # Without a list of counts, walk k upwards until the criterion of section 3.3 is met,
+    # then take one more, which is the curve each panel of Figure 4 shows. The reference
+    # year must already be on disk for that; with a list, or without a reference, every
+    # count in the list is run and nothing is judged.
+    ref_ann = OUT + '/%s_annual_mean.npy' % REF
+    ref_day = OUT + '/%s_daily.npy' % REF
+    judge = K_ARG is None and os.path.exists(ref_ann) and os.path.exists(ref_day)
+    if judge:
+        C = np.flatnonzero(np.load(ref_ann).astype(np.float64) > C_MIN)
+        R = read_cells(ref_day, C)
+        print('judging %d cells above %g m3/s against the %s year, threshold %.3f'
+              % (C.size, C_MIN, REF, KGE_THRESHOLD), flush=True)
+        ks = range(1, KMAX + 1)
+    else:
+        ks = KS if K_ARG is None else [int(x) for x in K_ARG.split(',')]
+    met = None                                   # the first count that meets the criterion
+
+    for k in ks:
+        if met is not None and k > met + 1:       # one past the crossing, and done
+            break
         path = OUT + '/gpu_k%d_daily.npy' % k
         if os.path.exists(path + '.done'):
+            if judge and met is None:
+                p5 = float(np.percentile(kge_per_cell(read_cells(path, C), R), 5))
+                if p5 >= KGE_THRESHOLD:
+                    met = k
             continue
         mm = np.lib.format.open_memmap(path, mode='w+', dtype=np.float32, shape=(ndays, N))
         q = q0.clone()
@@ -184,7 +243,18 @@ elif STAGE == 'gpu':
             mm[day] = (acc / nsub).cpu().numpy()
         del mm
         open(path + '.done', 'w').close()
-        print('  k=%-2d year done (%.0fs)' % (k, time.time() - t0), flush=True)
+        if judge:
+            p5 = float(np.percentile(kge_per_cell(read_cells(path, C), R), 5))
+            note = ''
+            if p5 >= KGE_THRESHOLD and met is None:
+                met = k
+                note = '  <- meets %.3f, one more to go' % KGE_THRESHOLD
+            print('  k=%-2d year done (%.0fs)  5th pct KGE %.5f%s'
+                  % (k, time.time() - t0, p5, note), flush=True)
+        else:
+            print('  k=%-2d year done (%.0fs)' % (k, time.time() - t0), flush=True)
+    if judge:
+        print('the network needs %s iterations' % (met if met else 'more than %d' % KMAX), flush=True)
     print('gpu done (%.0fs)' % (time.time() - t00), flush=True)
 
 elif STAGE == 'ordered':
@@ -211,6 +281,14 @@ elif STAGE == 'ordered':
     print('ordered done (%.0fs)' % (time.time() - t00), flush=True)
 
 elif STAGE == 'metrics':
+    # the counts to summarise are the years on disk, so this stage cannot disagree with
+    # what the gpu stage produced; YEAR_KS narrows that set when only a part is wanted
+    import glob, re
+    KS_FOUND = sorted(int(re.search(r'gpu_k(\d+)_daily', f).group(1))
+                      for f in glob.glob(OUT + '/gpu_k*_daily.npy.done'))
+    if os.environ.get('YEAR_KS'):
+        KS_FOUND = [k for k in KS_FOUND if k in KS]
+    print('summarising k = %s' % ', '.join(str(k) for k in KS_FOUND), flush=True)
     ann_all = np.load(OUT + '/%s_annual_mean.npy' % REF).astype(np.float64)
     C = np.flatnonzero(ann_all > C_MIN)
     print('evaluation cells %d above %g m3/s' % (C.size, C_MIN), flush=True)
@@ -230,32 +308,8 @@ elif STAGE == 'metrics':
         np.maximum.at(upmax, dst[eb[i]:eb[i + 1]], L[src[eb[i]:eb[i + 1]]])
     Cr = (1.0 / (net.channelAlpha[C] * net.beta * ann_all[C] ** (net.beta - 1.0))) * net.dtRouting / dx[C]
 
-    def read_cells(path):
-        """The cells of C, read in row blocks so the file is walked once, front to back.
-        The blocks are read with plain file reads rather than through a memory map, because
-        a map faults one page at a time and crawls at about 20 MB/s on this file system."""
-        m = np.load(path, mmap_mode='r')
-        nd, nc, off = m.shape[0], m.shape[1], m.offset
-        assert m.dtype == np.float32, m.dtype
-        del m
-        blk = max(1, (2 << 30) // (nc * 4))            # about 2 GB a read
-        out = np.empty((nd, C.size), np.float32)
-        buf = np.empty(blk * nc, np.float32)
-        with open(path, 'rb') as fh:
-            fh.seek(off)
-            for d0 in range(0, nd, blk):
-                n = min(blk, nd - d0)
-                mv = memoryview(buf[:n * nc]).cast('B')
-                got = 0
-                while got < len(mv):
-                    r = fh.readinto(mv[got:])
-                    if not r:
-                        raise IOError('short read on %s at day %d' % (path, d0))
-                    got += r
-                out[d0:d0 + n] = buf[:n * nc].reshape(n, nc)[:, C]
-        return out.astype(np.float64)
 
-    R = read_cells(OUT + '/%s_daily.npy' % REF)
+    R = read_cells(OUT + '/%s_daily.npy' % REF, C)
     Rm, Rs = R.mean(0), R.std(0)
     den = ((R - Rm) ** 2).sum(0)
     big = np.flatnonzero(ann_all[C] > BIG_MIN)
@@ -268,8 +322,8 @@ elif STAGE == 'metrics':
                   serial=R[:, big].astype(np.float32))
     summary = dict(tag=TAG, reference=REF, reservoirs=os.path.basename(RES_FILE) if RES_FILE else None, cells=N, levels=int(net.n_levels), res_deg=RES, eval_cells=int(C.size),
                    big_cells=int(big.size), k={})
-    for k in KS:
-        G = read_cells(OUT + '/gpu_k%d_daily.npy' % k)
+    for k in KS_FOUND:
+        G = read_cells(OUT + '/gpu_k%d_daily.npy' % k, C)
         Gm, Gs = G.mean(0), G.std(0)
         r = ((G - Gm) * (R - Rm)).mean(0) / np.maximum(Gs * Rs, 1e-12)
         bias = Gm / np.maximum(Rm, 1e-9)
