@@ -1,4 +1,4 @@
-# gpu_kwr core runtime
+# SURGE core runtime
 torch>=2.0
 numpy>=1.24
 

@@ -7,7 +7,7 @@ name = "surge-routing"
 version = "0.1.0"
 description = "SURGE: Scalable Upstream-decoupled Routing on GPU-Engine — kinematic-wave river routing via a convergent fixed-point reformulation"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "GPL-3.0-or-later" }
 authors = [{ name = "Zhanwei Liu" }, { name = "Xiaogang He" }]
 dependencies = ["torch>=2.0", "numpy>=1.24"]

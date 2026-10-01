@@ -22,7 +22,7 @@ paper/
 | Fig. 4, iterations each network needs | `fig_iterations_by_resolution.py` | `iterations_by_resolution.npz` | `fig_iterations_by_resolution.pdf/png` |
 | Fig. 5, wall-clock and speedup | `fig_timing_bars.py` | `resolution_scaling.json` | `fig_timing_bars.pdf/png` |
 | Fig. 6, 26 basins routed on their own | `fig_basin_speedup.py` | `bench_basins_display.json`, `basin_map_01min.npz`, `routing_static_30min.npz` | `fig_basin_speedup.pdf/png` |
-| Fig. 7, reservoir operation | `fig_reservoir.py` | `reservoir_timing.json`, `reservoir_convergence.json`, `scheme_bench.json` | `fig_reservoir.pdf/png` |
+| Fig. 7, reservoir operation | `fig_reservoir.py` | `reservoir_timing.json`, `reservoir_convergence.json` | `fig_reservoir.pdf/png` |
 
 `fig_method_seine.py` is the one script that needs a routing network rather than
 a distilled file, because it draws a real basin. Build one with
@@ -46,7 +46,6 @@ SURGE_DATA=/path/to/networks python fig_method_seine.py
 | `river_reach_shapes.json`, `river_reach_text.json` | the reach outlines and labels of the schematic |
 | `reservoir_timing.json` | wall-clock with and without the dams at 5, 3 and 1 arcmin |
 | `reservoir_convergence.json` | 1 − KGE at the 5th percentile against the iteration count, with and without the dams |
-| `scheme_bench.json` | the benchmark the reservoir cost is taken from |
 
 ## Reproduce
 
