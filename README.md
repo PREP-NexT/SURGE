@@ -106,6 +106,9 @@ experiments/                 Reproducing the paper: the year at each resolution
                              maps, the iterations each basin needs, the two
                              reservoir checks, and the one timing protocol
                              behind every reported number
+jobs/                        The PBS scripts that submitted the experiments on
+                             the cluster they ran on, with the resources and the
+                             order each one needed
 paper/                       Figure scripts, figure data, and figures of the
                              manuscript
 environment.yml              Conda environment specification
@@ -192,6 +195,10 @@ python experiments/bench_unified_timing.py time gpu_ordered net.npz steady.npz o
 The configurations are `surge`, `gpu_ordered`, `cpu_parallel` and `cpu_serial`,
 and `SURGE_ITERATIONS` sets the iteration count each network runs at. The
 `cpu_serial` configuration calls the CWatM kernel, so it needs `GPU_KWR_T5_SO`.
+
+Every experiment of the paper was submitted to a PBS cluster, and `jobs/` holds
+the scripts that did it, with the walltime and the memory each stage needed and
+the order they chain in. See [jobs/README.md](jobs/README.md).
 
 ### 3. Reproduce the paper figures
 
