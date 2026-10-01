@@ -57,9 +57,12 @@ This repository accompanies the manuscript:
 - [SURGE: Scalable Upstream-decoupled Routing on GPU-Engine](#surge-scalable-upstream-decoupled-routing-on-gpu-engine)
   - [Citation](#citation)
   - [Table of contents](#table-of-contents)
+  - [System requirements](#system-requirements)
   - [Installation](#installation)
+  - [Demo](#demo)
   - [Project layout](#project-layout)
   - [Quick start](#quick-start)
+  - [Running SURGE on your own data](#running-surge-on-your-own-data)
   - [Workflow](#workflow)
     - [1. Build a routing network](#1-build-a-routing-network)
     - [2. Route and benchmark](#2-route-and-benchmark)
@@ -69,10 +72,23 @@ This repository accompanies the manuscript:
 
 ---
 
-## Installation
+## System requirements
 
-SURGE targets Python 3.10+ with PyTorch 2.0+. Install via conda using the
-environment file, then install the package in editable mode:
+SURGE is a Python package and needs Python 3.10 or later, PyTorch 2.0 or later,
+and NumPy 1.24 or later. Nothing else is required to route a network.
+
+It has been run on Linux, under Python 3.11 and 3.12, with PyTorch 2.2.2 on CUDA
+12.1 and PyTorch 2.5 and 2.6 on CUDA 11.8. macOS and Windows are untested.
+
+No special hardware is needed: the solver runs on CPU tensors, and the demo below
+does. A CUDA GPU is what makes it fast, and the results in the paper were measured
+on one NVIDIA A100-SXM4-40GB. The card has to hold the network and the fields, so
+the 30 arc-minute network fits in well under a gigabyte while the 55.8-million-cell
+1 arc-minute network wants a 40 GB card. Reproducing the serial baseline also needs
+the CWatM kernel, which `surge/serial_ref.py` finds through `GPU_KWR_T5_SO`;
+without it the ordered scheme is an equivalent machine-precision reference.
+
+## Installation
 
 ```bash
 git clone https://github.com/PREP-NexT/SURGE.git
@@ -82,9 +98,20 @@ conda activate surge
 pip install -e .
 ```
 
-A CUDA-capable GPU is required for the GPU benchmarks; the solver also runs
-(more slowly) on CPU tensors, and the serial reference kernel is optional
-(see `surge/serial_ref.py`).
+About five minutes on a desktop with a warm conda cache, most of it spent
+downloading PyTorch.
+
+## Demo
+
+```bash
+python demo/run_demo.py
+```
+
+Thirty days on the global 30 arc-minute network, routed twice, once with the
+parallel scheme and once with the ordered scheme that returns the serial solution,
+and then compared. It needs no GPU and no download, and takes under a minute on
+four CPU threads. [demo/README.md](demo/README.md) gives the output to expect and
+what the numbers in it mean.
 
 ## Project layout
 
@@ -109,6 +136,7 @@ experiments/                 Reproducing the paper: the year at each resolution
 jobs/                        The PBS scripts that submitted the experiments on
                              the cluster they ran on, with the resources and the
                              order each one needed
+demo/                        A thirty-day run that finishes on a laptop
 paper/                       Figure scripts, figure data, and figures of the
                              manuscript
 environment.yml              Conda environment specification
@@ -136,6 +164,38 @@ q_exact = router.substep_ordered(q, qd)
 
 State and parameters broadcast over a leading ensemble axis (`(B, N)`
 tensors), so one kernel invocation advances all ensemble members.
+
+## Running SURGE on your own data
+
+SURGE replaces the channel-routing step and nothing else. It takes the runoff a
+model already produces and returns discharge along the river network, so the same
+solver serves CWatM, H08, JULES, VIC, MOSART, SUMMA and anything else that writes
+runoff on a grid. Three things have to line up.
+
+**The network.** `build/build_multiresolution.py` and `build/build_from_cama.py`
+turn a public flow-direction map into the `.npz` that `RoutingNetwork` reads, and
+`build/patch_alpha_area.py` gives it the channel width the paper uses. A network
+built once is used by every run.
+
+**The runoff.** The solver wants lateral inflow per unit channel length, in
+m2 s-1, as `q = R * cellArea / (1000 * chanLength)` for a runoff `R` in
+kg m-2 s-1, which is the same as mm s-1. `examples/regrid_runoff.py` does that
+for a runoff field on a coarser grid, which is the usual case: a 0.5-degree
+runoff drives a 5 arc-minute network by giving every routing cell the value of
+the 0.5-degree cell that holds it.
+
+**The iteration count.** It follows the Courant number of the network, so it
+belongs to the network and the time step rather than to the run: two on a 30
+arc-minute network and thirty at 1 arc-minute, with the time step of 4,320 s this
+study uses. A count that is too low leaves the discharge short of the serial
+solution everywhere the flow is fast. To find it for a network of your own, run
+the year in `experiments/bench_year_resolution.py`, whose gpu stage walks the
+count upwards until the solution matches and then reports it.
+
+With those in hand, routing a series is the loop in `examples/route_runoff.py`.
+Reservoirs need `ResRouter` in place of `TorchRouter` and a file of dam cells,
+capacities and mean releases, which `examples/map_grand_dams.py` writes from the
+GRanD catalogue.
 
 ## Workflow
 
