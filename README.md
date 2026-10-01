@@ -96,14 +96,16 @@ surge/                       Solver package
 └── serial_ref.py            Bridge to CWatM's serial C kernel (reference)
 build/                       Construct networks from public flow-direction maps
 ├── build_multiresolution.py 30/15/5 arc-minute networks (CWatM/Eilander maps)
-└── build_from_cama.py       3/1 arc-minute networks (CaMa-Flood maps)
-examples/                    Using SURGE: routing a runoff series, and
+├── build_from_cama.py       3/1 arc-minute networks (CaMa-Flood maps)
+└── patch_alpha_area.py      the channel width of the paper, w = 3*sqrt(U)
+examples/                    Using SURGE: routing a runoff series, putting a
+                             0.5-degree runoff field into cell order, and
                              putting the GRanD dams on a network
-experiments/                 Reproducing the paper: accuracy against the serial
-                             kernel, iterations against network depth,
-                             resolution scaling, the cost of the reservoirs,
-                             the CPU-parallel baseline, and the one timing
-                             protocol behind every reported number
+experiments/                 Reproducing the paper: the year at each resolution
+                             against the serial kernel, the per-cell metric
+                             maps, the iterations each basin needs, the two
+                             reservoir checks, and the one timing protocol
+                             behind every reported number
 paper/                       Figure scripts, figure data, and figures of the
                              manuscript
 environment.yml              Conda environment specification
@@ -149,13 +151,25 @@ Data sources are documented in the manuscript's Open Research section.
 ### 2. Route and benchmark
 
 ```bash
-python examples/route_runoff.py  net.npz runoff.npy out.npy   # basic end use
-python experiments/bench_accuracy_vs_serial.py net.npz runoff.npy
-python experiments/bench_depth_independence.py static/*.npz
-python experiments/bench_resolution_scaling.py static/*.npz
-python experiments/bench_ordered.py static/*.npz
-python experiments/bench_reservoir.py  net.npz res_grand.npz     # + map_grand_dams.py
-python experiments/bench_cpu_parallel.py net.npz 24              # CPU baseline
+python examples/route_runoff.py routing_05min.npz runoff.npy out.npy 7
+python examples/regrid_runoff.py routing_05min.npz qtot_2010.npz runoff.npy
+python examples/map_grand_dams.py routing_05min.npz GRanD_v13.csv res_grand.npz \
+    --lat0 89.9583 --dlat 0.083333 --lon0 -179.9583 --dlon 0.083333
+```
+
+The year the paper reports, at one resolution, runs in four stages, each writing
+what the next one reads. The serial stage is the long one, and it is the only
+stage that needs the CWatM kernel.
+
+```bash
+export SURGE_DATA=/path/to/the/networks/and/runoff
+python experiments/bench_year_resolution.py 05min spin      # a year to settle the field
+python experiments/bench_year_resolution.py 05min serial    # the reference year
+python experiments/bench_year_resolution.py 05min gpu 1,2,3,5,7,11
+python experiments/bench_year_resolution.py 05min metrics   # KGE, NSE and bias per cell
+python experiments/bench_metric_maps.py routing_05min.npz runoff.npy maps.npz
+python experiments/check_reservoir_massbalance.py           # the storage stays in bounds
+python experiments/check_dam_convergence.py                 # the dams add no iterations
 ```
 
 The timings reported in the paper come from one protocol, in

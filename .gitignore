@@ -21,3 +21,4 @@ __pycache__/
 # local backups and trial renders are never committed
 *.bak*
 _trial_*
+reservoir_massbalance.json
