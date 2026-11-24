@@ -10,7 +10,7 @@ import sys, numpy as np, time
 t0=time.time()
 NET, Q, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
 d=np.load(NET); mask=d['mask2d']; rows,cols=np.where(~mask)
-RES=180.0/mask.shape[0]
+RES=360.0/mask.shape[1]   # the maps span 360 deg of longitude; CaMa 3' and 1' stop at 60 S
 clat=90.0-(rows+0.5)*RES; clon=-180.0+(cols+0.5)*RES
 q=np.load(Q); qt=q['qtot']; qlat=q['lat']; qlon=q['lon']
 print('%d routing cells, qtot %s' % (rows.size, qt.shape))
@@ -20,6 +20,6 @@ out=np.empty((rows.size, qt.shape[0]), np.float32)
 for d_ in range(qt.shape[0]):
     out[:,d_]=qt[d_][i,j]
 out=np.nan_to_num(out, nan=0.0)
-# units: kg m-2 s-1 (= mm s-1), as regrid_qtot.py wrote and as q = R*A/(1000*dx) assumes
+# units: kg m-2 s-1 (= mm s-1), as q = R*A/(1000*dx) assumes
 np.save(OUT, out)
 print('wrote %s  %s  %.1f GB  in %.0f s' % (OUT, out.shape, out.nbytes/1e9, time.time()-t0))

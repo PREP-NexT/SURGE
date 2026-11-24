@@ -1,48 +1,42 @@
 {
- "protocol": "bench_unified_timing.py: uniform runoff 2 mm/day, steady state of that forcing shared by all configurations, 10 warm-up steps then the mean over 600 routing time steps, three repeats per configuration with the median reported; SURGE compiled with torch.compile and timed at the iteration count each river network needs (field k); GPU-ordered does not iterate",
+ "protocol": "as resolution_scaling.json; SURGE timed at the iteration count each river network needs (field k); GPU-ordered does not iterate",
  "machine": "NVIDIA A100-SXM4-40GB on a whole ASPIRE 2A node",
- "note": "Measured after the reservoir router was rewritten: the sweep no longer touches the whole grid to write a few hundred cells, and the level loop no longer asks the device, once per level, whether that level holds a dam. none = no reservoir code, code_only = the code with no reservoir in it, dams = the GRanD dams. The previous version is kept as reservoir_timing.json.bak_20260926_prev3.",
- "source": "timing_unified/aspire_res_v3 (PBS job 25562935, 2026-09-26)",
+ "source": "one set of timing runs on ASPIRE 2A, 2026-11-23/24: all four configurations, and the runs with and without the dams, from the same jobs",
+ "note": "Wall-clock in milliseconds per routing time step. none = no reservoirs, dams = the GRanD dams; the runs without dams are those of resolution_scaling.json.",
  "rows": {
   "5'": {
    "surge": {
-    "none": 1.2653,
-    "code_only": 1.2682,
-    "dams": 1.3655,
+    "none": 1.2663566895450156,
+    "dams": 1.3670334437241156,
     "k": 7
    },
    "gpu_ordered": {
-    "none": 464.1259,
-    "code_only": 462.3833,
-    "dams": 531.621
+    "none": 454.9790463449123,
+    "dams": 528.3489228885932
    },
    "reservoir_cells": 6501
   },
   "3'": {
    "surge": {
-    "none": 5.212,
-    "code_only": 5.2092,
-    "dams": 5.4568,
+    "none": 5.242855538769315,
+    "dams": 5.481684786888461,
     "k": 11
    },
    "gpu_ordered": {
-    "none": 847.6253,
-    "code_only": 845.3477,
-    "dams": 946.7687
+    "none": 832.4713442117596,
+    "dams": 958.6420241386319
    },
    "reservoir_cells": 6966
   },
   "1'": {
    "surge": {
-    "none": 123.6377,
-    "code_only": 123.6348,
-    "dams": 125.2576,
+    "none": 123.72685334955652,
+    "dams": 125.35436977554734,
     "k": 30
    },
    "gpu_ordered": {
-    "none": 2840.9236,
-    "code_only": 2845.9811,
-    "dams": 2962.959
+    "none": 2787.0192700748644,
+    "dams": 3008.919596845129
    },
    "reservoir_cells": 7270
   }

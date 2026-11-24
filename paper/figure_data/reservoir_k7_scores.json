@@ -1,0 +1,15 @@
+{
+ "note": "5 arc-minute 2010 year at k = 7 over the high-discharge cells (annual mean > 100 m3/s). with_dams: SURGE with the dams against GPU-ordered with the dams; without_dams: SURGE against CPU-serial. bias_absmax is a fraction.",
+ "with_dams": {
+  "cells": 106046,
+  "kge_median": 0.9995160881849061,
+  "nse_median": 0.9999458213894774,
+  "bias_absmax": 0.006104017800811601
+ },
+ "without_dams": {
+  "cells": 106661,
+  "kge_median": 0.9995432483286247,
+  "nse_median": 0.9999450598705983,
+  "bias_absmax": 0.005984992928599997
+ }
+}

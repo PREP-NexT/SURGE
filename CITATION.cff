@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite the paper below."
-title: "SURGE: Scalable Upstream-decoupled Routing on GPU-Engine"
+title: "SURGE: Scalable Upstream-decoupled Routing on GPU Engine"
 abstract: >-
   A GPU-parallel solver for the implicit kinematic-wave river routing of global
   hydrological models. The serial upstream-to-downstream recursion is recast as a
@@ -23,10 +23,20 @@ keywords:
   - differentiable modelling
 preferred-citation:
   type: article
-  title: "SURGE: a GPU-parallel kinematic-wave river routing model"
+  title: "SURGE: parallel kinematic wave river routing on GPUs"
   authors:
     - family-names: Liu
       given-names: Zhanwei
+    - family-names: Qiu
+      given-names: Jiangchao
+    - family-names: Burek
+      given-names: Peter
+    - family-names: Pan
+      given-names: Ming
+    - family-names: Yoshimura
+      given-names: Kei
+    - family-names: Kim
+      given-names: Hyungjun
     - family-names: He
       given-names: Xiaogang
   year: 2026

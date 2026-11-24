@@ -1,4 +1,7 @@
-"""Figure 8 with every basin named on the map by a leader line.
+"""Figure 8: map in the Robinson projection with each basin named (no numbers); panel b names
+only a few basins. Panel titles are centred over their panels.
+
+Figure 8 with every basin named on the map by a leader line.
 
 Same measurements and colours as plot_basins_map.py, which it leaves untouched. The
 numbered discs and the separate list of names are gone: each basin carries a small black
@@ -14,7 +17,7 @@ the label or leader lies over a painted basin or over land. The most crowded bas
 room is left around them.
 
 The figure is built at the 166 mm text width in the paper1 style, so its 8 pt text prints
-at 8 pt, and panel letters follow paper1_gpu_routing/画图规范与经验.md.
+at 8 pt, and panel letters follow the paper's figure style.
 
     python plot_basins_map_leaders.py [bench.json basin_map.npz coarse.npz out_stem]
 """
@@ -36,6 +39,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from paper_style import setup_paper1_style  # noqa: E402
 setup_paper1_style()
+# Fig 1 size tier: letter 11, title 10.5, labels and annotations 9, tick numbers stay 8
+FS_LETTER, FS_TITLE = 11.0, 10.5
+plt.rcParams.update({'axes.titlesize': FS_TITLE, 'axes.labelsize': 9.0,
+                     'legend.fontsize': 9.0, 'font.size': 9.0})
 
 DATA = os.path.join(HERE, '..', 'figure_data')
 DEFAULTS = [os.path.join(DATA, 'bench_basins_display.json'),
@@ -45,7 +52,7 @@ DEFAULTS = [os.path.join(DATA, 'bench_basins_display.json'),
 
 CMAP = plt.get_cmap('RdYlBu_r')        # blue for the slow end, red for the fast end
 LAND, OUTLINE, LEAD = '#E6E8EA', '#1A1A1A', '#3A3F45'
-FS = 8.0
+FS = 9.0
 # names as printed. The data keep the names of Nijssen et al. (2001); where that name is not
 # the one English-language readers know, the label uses the common one
 DISPLAY = {'Changjiang': 'Yangtze', 'S.Dvina': 'Northern Dvina', 'Parana': 'Paraná', 'Xi': 'Pearl'}
@@ -63,12 +70,28 @@ HALO = [pe.withStroke(linewidth=2.4, foreground='white')]
 
 # the grid of the figure, in millimetres from its top left corner
 W = 166.0
-MAP_X, MAP_Y, MAP_W = 2.0, 6.0, 162.0
-XLIM, YLIM = (-184.0, 204.0), (-60.0, 96.0)
+MAP_X, MAP_Y, MAP_W = 2.0, 8.0, 162.0
+# the map is drawn in the Robinson projection, scaled so one unit is one degree of
+# longitude at the equator; every placement rule below works in these projected units
+import pyproj
+_R = 180.0 / (0.8487 * np.pi)
+_ROBIN = pyproj.Proj('+proj=robin +R=%r' % _R)
+def P(lon, lat):
+    x, y = _ROBIN(np.asarray(lon, float), np.asarray(lat, float))
+    return np.asarray(x), np.asarray(y)
+def Pinv(x, y):
+    lon, lat = _ROBIN(np.asarray(x, float), np.asarray(y, float), inverse=True)
+    return np.asarray(lon), np.asarray(lat)
+LAT_S = -58.0                                 # the map stops south of Tierra del Fuego
+Y_S, Y_N = float(P(0, LAT_S)[1]), float(P(0, 90)[1])
+XLIM, YLIM = (-186.0, 186.0), (Y_S - 1.0, Y_N + 5.0)
+PRES = 0.1                                    # cell of the projected rasters [units]
 MAP_H = MAP_W * (YLIM[1] - YLIM[0]) / (XLIM[1] - XLIM[0])
-SC_X, SC_GAP, SC_W, SC_H, SC_BOTTOM = 18.0, 10.0, 144.0, 70.0, 12.0
+SC_X, SC_GAP, SC_W, SC_H, SC_BOTTOM = 18.0, 9.0, 144.0, 40.0, 11.0   # b 8 mm lower so the figure and its caption fit the page
 SC_Y = MAP_Y + MAP_H + SC_GAP
-H = SC_Y + SC_H + SC_BOTTOM
+C_GAP, C_H = 12.0, 38.0           # panel c sits under b and shares its axis of cells
+C_Y = SC_Y + SC_H + C_GAP
+H = C_Y + C_H + SC_BOTTOM
 MM = 1 / 25.4
 
 
@@ -76,12 +99,13 @@ def mmax(fig, x, y, w, h):
     return fig.add_axes([x / W, 1.0 - (y + h) / H, w / W, h / H])
 
 
-def panel_letter(fig, x, y, letter, title=None, gap_mm=2.6):
-    """The bold letter of the other figures, with the panel title on the same baseline"""
-    fig.text(x / W, 1.0 - y / H, letter, fontsize=10, fontweight='bold', ha='left', va='bottom')
+def panel_letter(fig, x, y, letter, title=None, gap_mm=2.6, centre=None):
+    """The bold letter at the left, and the panel title centred over its panel (centre, in
+    mm from the left), on the same baseline, as in the other figures"""
+    fig.text(x / W, 1.0 - y / H, letter, fontsize=FS_LETTER, fontweight='bold', ha='left', va='bottom')
     if title:
-        fig.text((x + gap_mm) / W, 1.0 - y / H, title, fontsize=plt.rcParams['axes.titlesize'],
-                 ha='left', va='bottom')
+        fig.text(centre / W, 1.0 - y / H, title, fontsize=plt.rcParams['axes.titlesize'],
+                 ha='center', va='bottom')
 
 
 def land_backdrop(path):
@@ -119,7 +143,22 @@ def main():
     for r in basins:
         if abs(painted[r['name']] - r['speedup']) > 0.05:
             raise SystemExit('raster is out of date for %s; re-run map_basins.py' % r['name'])
-    painted_any = np.isfinite(grid)
+    # the basin raster and the land mask are resampled once onto a regular grid in the
+    # projected plane, nearest neighbour, so the placement rules can index them directly
+    _xs = np.arange(XLIM[0], XLIM[1], PRES) + PRES / 2
+    _ys = np.arange(YLIM[1], YLIM[0], -PRES) - PRES / 2
+    _X, _Y = np.meshgrid(_xs, _ys)
+    _lon, _lat = Pinv(_X, _Y)
+    _ok = np.isfinite(_lon) & np.isfinite(_lat) & (np.abs(_lon) <= 180) & (_lat >= LAT_S)
+    _bx, _by = P(_lon[_ok], _lat[_ok])
+    _ok2 = np.zeros_like(_ok); _ok2[_ok] = (np.abs(_bx - _X[_ok]) < 0.05) & (np.abs(_by - _Y[_ok]) < 0.05)
+    _ok = _ok2
+    _r = np.clip(((90.0 - _lat[_ok]) / deg).astype(int), 0, grid.shape[0] - 1)
+    _c = np.clip(((_lon[_ok] + 180.0) / deg).astype(int), 0, grid.shape[1] - 1)
+    grid_p = np.full(_X.shape, np.nan); grid_p[_ok] = grid[_r, _c]
+    PEXT = (XLIM[0], XLIM[0] + _xs.size * PRES, YLIM[1] - _ys.size * PRES, YLIM[1])
+    globe_in = _ok
+    painted_any = np.isfinite(grid_p)
     vals = np.array([r['speedup'] for r in basins])
     norm = matplotlib.colors.Normalize(vals.min(), vals.max())
     colour = {r['name']: CMAP(norm(r['speedup'])) for r in basins}
@@ -129,21 +168,31 @@ def main():
 
     # ---------------------------------------------------------------- a: the map ------
     ax = mmax(fig, MAP_X, MAP_Y, MAP_W, MAP_H)
-    land, lext, _ = land_backdrop(coarse)
-    ax.imshow(land, extent=lext, origin='upper', interpolation='nearest', zorder=1,
+    land0, _, _ = land_backdrop(coarse)
+    _g = 360.0 / land0.shape[1]
+    _r = np.clip(((90.0 - _lat[_ok]) / _g).astype(int), 0, land0.shape[0] - 1)
+    _c = np.clip(((_lon[_ok] + 180.0) / _g).astype(int), 0, land0.shape[1] - 1)
+    land = np.zeros(_X.shape, bool); land[_ok] = land0[_r, _c]
+    ax.imshow(land, extent=PEXT, origin='upper', interpolation='nearest', zorder=1,
               cmap=matplotlib.colors.ListedColormap([(0, 0, 0, 0), LAND]))
-    ax.imshow(grid, extent=(-180, 180, -90, 90), origin='upper', cmap=CMAP, norm=norm,
+    ax.imshow(grid_p, extent=PEXT, origin='upper', cmap=CMAP, norm=norm,
               interpolation='nearest', zorder=2)
     for name, val in painted.items():
-        ax.contour((grid == val).astype(float), levels=[0.5], colors=[OUTLINE],
-                   linewidths=.35, extent=(-180, 180, -90, 90), origin='upper', zorder=3)
+        ax.contour((grid_p == val).astype(float), levels=[0.5], colors=[OUTLINE],
+                   linewidths=.35, extent=PEXT, origin='upper', zorder=3)
+    # the outline of the projected globe: the two edge meridians and the cut parallels
+    _la = np.linspace(LAT_S, 90, 200)
+    _ex, _ey = P(np.r_[np.full(200, 180.0), np.linspace(180, -180, 200), np.full(200, -180.0), np.linspace(-180, 180, 200)],
+                 np.r_[_la, np.full(200, 90.0), _la[::-1], np.full(200, LAT_S)])
+    ax.plot(_ex, _ey, color='#1A1A1A', lw=0.6, zorder=4)
+    OUTLINE_XY = np.c_[_ex, _ey]
     ax.set_xlim(*XLIM)
     ax.set_ylim(*YLIM)
     ax.set_aspect('equal', adjustable='box')
     ax.set_xticks([])
     ax.set_yticks([])
     ax.set_frame_on(False)
-    panel_letter(fig, 1.0, MAP_Y + 3.5, 'a', 'Speedup of each basin routed on its own')
+    panel_letter(fig, 1.0, MAP_Y - 1.0, 'a', 'Speedup of each basin routed on its own', centre=MAP_X + MAP_W / 2)
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
     to_data = ax.transData.inverted()
@@ -156,24 +205,23 @@ def main():
         return x1 - x0, y1 - y0
 
     def painted_fraction(x0, y0, x1, y1, own=None):
-        r0 = int(np.clip((90.0 - y1) / deg, 0, grid.shape[0]))
-        r1 = int(np.clip((90.0 - y0) / deg, 0, grid.shape[0]))
-        c0 = int(np.clip((x0 + 180.0) / deg, 0, grid.shape[1]))
-        c1 = int(np.clip((x1 + 180.0) / deg, 0, grid.shape[1]))
+        r0 = int(np.clip((PEXT[3] - y1) / PRES, 0, grid_p.shape[0]))
+        r1 = int(np.clip((PEXT[3] - y0) / PRES, 0, grid_p.shape[0]))
+        c0 = int(np.clip((x0 - PEXT[0]) / PRES, 0, grid_p.shape[1]))
+        c1 = int(np.clip((x1 - PEXT[0]) / PRES, 0, grid_p.shape[1]))
         area = max((r1 - r0) * (c1 - c0), 1)
         if r1 <= r0 or c1 <= c0:
             return 0.0
         sub = painted_any[r0:r1, c0:c1]
         if own is not None:
-            sub = sub & (grid[r0:r1, c0:c1] != own)
+            sub = sub & (grid_p[r0:r1, c0:c1] != own)
         return float(sub.sum()) / area
 
     def land_fraction(x0, y0, x1, y1):
-        g = 360.0 / land.shape[1]
-        r0 = int(np.clip((90.0 - y1) / g, 0, land.shape[0]))
-        r1 = int(np.clip((90.0 - y0) / g, 0, land.shape[0]))
-        c0 = int(np.clip((x0 + 180.0) / g, 0, land.shape[1]))
-        c1 = int(np.clip((x1 + 180.0) / g, 0, land.shape[1]))
+        r0 = int(np.clip((PEXT[3] - y1) / PRES, 0, land.shape[0]))
+        r1 = int(np.clip((PEXT[3] - y0) / PRES, 0, land.shape[0]))
+        c0 = int(np.clip((x0 - PEXT[0]) / PRES, 0, land.shape[1]))
+        c1 = int(np.clip((x1 - PEXT[0]) / PRES, 0, land.shape[1]))
         if r1 <= r0 or c1 <= c0:
             return 0.0
         return float(land[r0:r1, c0:c1].mean())
@@ -188,19 +236,19 @@ def main():
         return (orient(p1, p2, q1) * orient(p1, p2, q2) < 0 and
                 orient(q1, q2, p1) * orient(q1, q2, p2) < 0)
 
-    # the colour key sits in the open South Pacific; its space is reserved first, and the
+    # the colour key sits in the open Indian Ocean below Africa; its space is reserved first, and the
     # bar is made exactly as wide as the label that sits above it
-    CB_LABEL = 'Speedup over one CPU core'
+    CB_LABEL = 'Speedup over CPU-serial'
     _t = ax.text(0, 0, CB_LABEL, fontsize=FS)
     _bb = _t.get_window_extent(fig.canvas.get_renderer()); _t.remove()
     _kx = ax.transData.inverted().transform([(0.0, 0.0), (_bb.width, 0.0)])[:, 0]
-    KEY = (-176.0, -41.0, -176.0 + (_kx[1] - _kx[0]), -38.5)
+    KEY = (37.0, -50.0, 37.0 + (_kx[1] - _kx[0]), -47.5)   # open Indian Ocean below Africa, inside the globe
     taken = [(KEY[0] - 2, KEY[1] - 9, KEY[2] + 2, KEY[3] + 8)]
 
     dots = {}
     for r in basins:
         rr, cc = inside_point(grid == painted[r['name']])
-        dots[r['name']] = np.array([-180.0 + (cc + 0.5) * deg, 90.0 - (rr + 0.5) * deg])
+        dots[r['name']] = np.array([float(v) for v in P(-180.0 + (cc + 0.5) * deg, 90.0 - (rr + 0.5) * deg)])
     allpts = np.array(list(dots.values()))
 
     crowd = {n: int((np.hypot(*(allpts - p).T) < 30).sum()) for n, p in dots.items()}
@@ -213,7 +261,7 @@ def main():
     # leaves its dot vertically and meets its label horizontally along one smooth curve,
     # and each label hangs off the end of its leader to the left or right, never at an angle
     ROW = 8.0
-    rows_y = np.arange(-52.0, YLIM[1] - 4.0 + 1e-9, ROW)
+    rows_y = np.arange(Y_S + 6.0, YLIM[1] - 4.0 + 1e-9, ROW)
     GAP, PAD = 1.2, 1.0
 
     def curve(p, q, n=16):
@@ -243,7 +291,7 @@ def main():
 
     def cluster_candidates(n, max_len, box_paint):
         p = dots[n]
-        label = '%d. %s' % (num[n], DISPLAY.get(n, n))
+        label = DISPLAY.get(n, n)
         w, h = text_size(label)
         own = painted[n]
         out = []
@@ -267,7 +315,11 @@ def main():
             if any(np.hypot(*(pts[2:] - d).T).min() < 1.5 for k, d in dots.items() if k != n):
                 return
             lp = np.mean([painted_fraction(x - .1, y - .1, x + .1, y + .1, own=own) for x, y in pts[2:]])
-            out.append((length + 150.0 * lp, q, box, pts, anchor, label, group))
+            # a label lying across the outline of the globe is penalised, so at 9 pt it sits
+            # wholly inside or wholly outside the frame
+            _bx = np.array([(box[0], box[1]), (box[2], box[1]), (box[2], box[3]), (box[0], box[3]), (box[0], box[1])])
+            edge = 40.0 if poly_cross(_bx, OUTLINE_XY) else 0.0
+            out.append((length + 150.0 * lp + edge, q, box, pts, anchor, label, group))
 
         steps = np.arange(3.0, max_len + 1e-9, 1.5)
         allowed_h = n not in ONLY_UP
@@ -359,7 +411,7 @@ def main():
       failed = []
       for n in order:
         p = dots[n]
-        label = '%d. %s' % (num[n], DISPLAY.get(n, n))
+        label = DISPLAY.get(n, n)
         w, h = text_size(label)
         own = painted[n]
         cands = []
@@ -509,7 +561,7 @@ def main():
     ax2.set_yscale('linear')   # the speedups span 39 to 137, which reads better without exponents
     ax2.set_xlim(8.0e4, 1.2e8) if SHOW_GLOBAL else ax2.set_xlim(9.0e4, 2.6e6)
     _sp = [r['speedup'] for r in rows]          # the axis follows the data, which moved when
-    ax2.set_ylim(0, max(_sp) * 1.18)               # the timings moved to the iterations needed
+    ax2.set_ylim(0, max(_sp) * 1.30)               # headroom for the whole-globe label over its star
     ax2.set_yticks([0, 50, 100, 150])
     MS = 7.0
     for r in basins:
@@ -518,10 +570,10 @@ def main():
     if glob:
         ax2.plot(glob['cells'], glob['speedup'], '*', ms=18, color='#FFFFFF',
                  mec=OUTLINE, mew=.8, zorder=3)
-    ax2.set_xlabel('River cells in the routed domain')
-    ax2.set_ylabel('Speedup over one CPU core')
+    ax2.tick_params(labelbottom=True)   # the same tick numbers as panel c
+    ax2.set_ylabel('Speedup over CPU-serial')
     ax2.grid(False, which='both')
-    panel_letter(fig, 1.0, SC_Y - 2.5, 'b', 'Speedup against the size of the routed domain')
+    panel_letter(fig, 1.0, SC_Y - 2.5, 'b', 'Speedup against the size of the routed domain', centre=SC_X + SC_W / 2)
     fig.canvas.draw()
 
     fx = 1.0 / SC_W
@@ -572,16 +624,21 @@ def main():
         else:
             bands.append((x0 - wide * fx, y0 - 0.3 * fy, x1 + wide * fx, y1 + 0.3 * fy))
 
-    FORCE_B = {1: 'l', 2: 'r', 3: 'l', 4: 'd', 5: 'l2', 6: 'l', 7: 'l', 8: 'd', 9: 'd2',
-               10: 'r', 11: 'u', 12: 'l', 13: 'u', 14: 'd', 15: 'l', 16: 'd', 17: 'u',
+    FORCE_B = {1: 'd', 2: 'r2', 3: 'l', 4: 'd', 5: 'l2', 6: 'l', 7: 'l', 8: 'd', 9: 'd2',
+               10: 'u', 11: 'u', 12: 'l', 13: 'u2', 14: 'd', 15: 'l', 16: 'd', 17: 'u',
                18: 'd', 19: 'u2', 20: 'u', 21: 'd', 22: 'u2', 23: 'd', 24: 'u', 25: 'd2',
-               26: 'u'}      # every label is placed by hand now, so a change to one of
+               26: 'r'}      # every label is placed by hand now, so a change to one of
     # them does not send the automatic search off to rearrange the rest
     order = sorted(basins, key=lambda r: (num[r['name']] not in FORCE_B, -r['cells']))
     # the ones placed by hand go first, so their side is still free when they ask for it
+    # only the basins the text or the eye needs are named: the two smallest, the largest,
+    # and a few well-known rivers spread along the curve
+    LABEL_B = {'Irrawaddy', 'Xi', 'Danube', 'Mekong', 'Mississippi', 'Congo', 'Amazon'}
     for i, r in enumerate(order):
+        if r['name'] not in LABEL_B:
+            continue
         px, py = frac(r['cells'], r['speedup'])
-        label = str(num[r['name']])
+        label = DISPLAY.get(r['name'], r['name'])
         w, h = label_wh(label)
         dirs = ['u', 'r', 'd', 'l'] if i % 2 == 0 else ['d', 'l', 'u', 'r']
         _f = FORCE_B.get(num[r['name']])
@@ -651,12 +708,77 @@ def main():
                         print('  %s placed without the corridor rule' % r['name'])
                         break
     for r in basins:            # the leader ends on the same black dot in a white ring the map
+        if r['name'] not in LABEL_B:      # only the named points carry the dot a leader ends on
+            continue
         ax2.plot([r['cells']], [r['speedup']], 'o', ms=2.6, mfc='k', mec='white', mew=0.5,
                  zorder=7)       # panel uses, drawn above everything else
 
     if glob:
-        ax2.text(gx, gy + 4.2 * fy, 'Whole globe', transform=ax2.transAxes, ha='center',
+        ax2.text(gx, gy + 4.2 * fy, 'Whole globe, %.0f\u00d7' % glob['speedup'], transform=ax2.transAxes, ha='center',
                  va='bottom', fontsize=FS, color='#1A1A1A', zorder=5)
+
+    # ------------------------------------------- c: the wall-clock of SURGE ------
+    ax3 = mmax(fig, SC_X, C_Y, SC_W, C_H)
+    ax3.set_xscale('log'); ax3.set_yscale('log')
+    ax3.set_xlim(*ax2.get_xlim())
+    cells = np.array([r['cells'] for r in basins], float)
+    tms = np.array([r['surge_ms'] for r in basins], float)
+    t0 = float(np.median(tms[cells < 2.0e5]))                 # the floor of the small basins
+    big = cells >= 2.0e5
+    per = float(cells[big] @ tms[big] / (cells[big] @ cells[big]))   # least squares through the origin, ms per cell once the GPU is full
+    xs = np.logspace(np.log10(ax3.get_xlim()[0]), np.log10(ax3.get_xlim()[1]), 50)
+    GUIDE = '#8A8F96'
+    ax3.plot(xs, np.full_like(xs, t0), ls=(0, (4, 2)), lw=0.8, color=GUIDE, zorder=1)
+    ax3.plot(xs, per * xs, ls=(0, (4, 2)), lw=0.8, color=GUIDE, zorder=1)
+    for r in basins:
+        ax3.plot(r['cells'], r['surge_ms'], 'o', ms=MS * 0.8, color=colour[r['name']],
+                 mec=OUTLINE, mew=.5, zorder=3)
+    if glob:
+        ax3.plot(glob['cells'], glob['surge_ms'], '*', ms=15, color='#FFFFFF', mec=OUTLINE,
+                 mew=.8, zorder=3)
+        # labeled as in b, centered above the star
+        ax3.annotate('Whole globe', (glob['cells'], glob['surge_ms']), textcoords='offset points',
+                     xytext=(0, 9), ha='center', va='bottom', fontsize=FS, color='#1A1A1A', zorder=5)
+    ax3.set_ylim(0.25, 600)
+    _x = 2.6e6
+    # written along the sloping line, in the empty stretch between the largest basin and the globe
+    _xa, _xb = 2.0e6, 2.0e7
+    _pa, _pb = ax3.transData.transform([(_xa, per * _xa), (_xb, per * _xb)])
+    _ang = np.degrees(np.arctan2(_pb[1] - _pa[1], _pb[0] - _pa[0]))
+    _xm = 7.0e6      # centre of the label, clear of the basins and of the star of the whole globe
+    ax3.annotate('Nearly proportional, %.2f ms per million river cells' % (per * 1e6), (_xm, per * _xm),
+                 textcoords='offset points', xytext=(-2.0 * np.sin(np.radians(_ang)), 2.0 * np.cos(np.radians(_ang))),
+                 ha='center', va='bottom', rotation=_ang, rotation_mode='anchor',
+                 fontsize=FS, color='#555555')
+    # two regimes split where the wall-clock per cell stops falling, shaded in b and c alike
+    SPLIT, TINT_L, TINT_R = t0 / per, '#F2EFE8', '#E9EFF4'     # split where the two lines cross
+    for a in (ax2, ax3):
+        x0, x1 = a.get_xlim()
+        a.axvspan(x0, SPLIT, color=TINT_L, lw=0, zorder=0)
+        a.axvspan(SPLIT, x1, color=TINT_R, lw=0, zorder=0)
+        a.set_xlim(x0, x1)
+    ax3.text(np.sqrt(ax3.get_xlim()[0] * SPLIT), 150, 'Most time spent\nstarting each\nupdate, GPU not\nfully used', ha='center', va='center', linespacing=1.1,
+             fontsize=FS, color='#555555')
+    ax3.text(SPLIT * 2.8, 150, 'Most time spent\nupdating the\nriver cells, GPU\nmostly busy', ha='center', va='center', linespacing=1.1,
+             fontsize=FS, color='#555555')
+    nx = t0 / per                                         # where the cells cost as much as the floor
+    # the label of the horizontal line, inside the left tint, with an arrow down to the line
+    _xc = np.sqrt(ax3.get_xlim()[0] * SPLIT)
+    ax3.text(_xc, 2.9, 'Nearly\nindependent of\nriver cells, %.2f ms' % t0, ha='center', va='bottom',
+             linespacing=1.1, fontsize=FS, color='#555555')
+    ax3.annotate('', xy=(_xc, t0 * 1.12), xytext=(_xc, 2.6),
+                 arrowprops=dict(arrowstyle='-|>', lw=0.7, color='#555555', mutation_scale=7,
+                                 shrinkA=0, shrinkB=0), zorder=4)
+    ax3.plot([nx, nx], [0.25, t0], ls=(0, (1, 1.5)), lw=0.7, color='#555555', zorder=1)
+    ax3.text(nx * 1.07, 0.34, 'Lines cross at about %.1f million river cells' % (nx / 1e6), ha='left', va='center',
+             fontsize=FS, color='#555555')
+    ax3.set_xlabel('River cells in the routed domain')
+    ax3.set_ylabel('SURGE wall-clock\nper time step [ms]')
+    ax3.grid(False, which='both')
+    panel_letter(fig, 1.0, C_Y - 2.5, 'c', 'Wall-clock of SURGE per time step', centre=SC_X + SC_W / 2)
+    print('floor %.3f ms, %.3f ns per cell, crossing at %.2e cells' % (t0, per * 1e6, t0 / per))
+
+    from paper_style import myriad_ticks; myriad_ticks(fig)   # tick numbers in Myriad Pro, symbols in STIX
 
     fig.savefig(stem + '.pdf')
     fig.savefig(stem + '.png', dpi=600)

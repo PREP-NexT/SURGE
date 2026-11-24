@@ -4,13 +4,15 @@
 #PBS -o logs/
 # One stage of bench_year_resolution.py on ASPIRE. TAG and STAGE come from qsub -v, and for
 # the gpu stage KLIST lists the iteration counts separated by colons (qsub -v splits on commas).
-# Every simulated field goes to scratch, which holds the ~760 GB the five networks need.
+# Every simulated field goes to YEAR_OUT, which must hold the ~760 GB the five networks need.
 set -e
 A=${SURGE_REPO:-$PBS_O_WORKDIR}
 cd $A
 module load pytorch/2.6.0-py3-cu11.8
-export GPU_KWR_T5_SO=$A/cwatm_fork/cwatm/hydrological_modules/routing_reservoirs/t5_linux.so
-export YEAR_OUT=/scratch/users/nus/e0816573/paper1_year_resolution
+# the serial stage needs GPU_KWR_T5_SO, the compiled CWatM kernel, set from outside
+[ "$STAGE" = serial ] && : "${GPU_KWR_T5_SO:?set GPU_KWR_T5_SO to the compiled CWatM t5 library}"
+# about 760 GB for the five networks, so point YEAR_OUT at a scratch file system
+export YEAR_OUT=${YEAR_OUT:-$A/output/year_resolution}
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 mkdir -p $YEAR_OUT
 # KS_LIST names the iteration counts the metrics stage summarises, colon separated for

@@ -2,11 +2,13 @@
 
 A reservoir cell replaces the kinematic-wave update with a storage-based release
 (a Hanasaki-style rule: outflow tracks the long-term mean inflow, modulated by the
-fill fraction). The release depends only on the START-of-substep storage, so within
-a substep a reservoir cell is a fixed source -- it decouples its upstream from its
-downstream, which is why adding reservoirs does not slow the fixed point or
-change its convergence (see paper Section 3.6). Storage is mass-balanced once per
-substep from the converged inflow.
+fill fraction). The release depends on the storage at the start of the time step and
+on the inflow of the same step, so a reservoir cell is not a fixed source: at every
+iteration of the parallel scheme its release is recomputed from the inflow the cells
+above it deliver, and it then passes that release downstream like any other cell
+(paper Section 2.4). Its response to a change in inflow is bounded, so the reservoirs
+do not slow the convergence (paper Section 4.3). Storage is mass-balanced once per
+time step from the converged inflow.
 
 Usage:
     from surge import RoutingNetwork

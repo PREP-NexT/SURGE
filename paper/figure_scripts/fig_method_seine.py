@@ -1,7 +1,7 @@
-"""Paper1 Figure 2: a river network (derived from the Seine at 5 arcmin, simplified)
+"""Figure 1: a river network (derived from the Seine at 5 arcmin, simplified)
 and the three schemes at reach level.
-Run:  ~/anaconda3/envs/rtho/bin/python fig_method_seine.py
-Output: paper/figures/fig_method.{png,pdf}, copied into paper1_gpu_routing/figures/
+Run:  SURGE_DATA=<folder with routing_static_05min.npz> python fig_method_seine.py
+Output: paper/figures/fig_method.{png,pdf}; copied to SURGE_FIGURE_COPY when set
 
 调标签位置只需改 LABEL_ADJUST 字典 (搜索这个名字), 按 (b) 图编号写调整,
 写法见字典上方注释; 改完重跑本脚本即可预览。
@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # paper1 style: Myriad Pro words, STIX equations, and sizes from
-# paper1_gpu_routing/画图规范与经验.md (8 pt text, 9 pt titles, 10 pt bold panel letters)
+# the paper's figure style (8 pt text, 9 pt titles, 10 pt bold panel letters)
 from paper_style import setup_paper1_style, panel_label
 setup_paper1_style()
 # built at the 166 mm text width, so the sizes set here are the sizes that print
@@ -218,12 +218,25 @@ B2 = bez(P2, P2 + t2*0.45*d2, O + (P2-O)/d2*0.4*d2, O)          # side B into th
 ring = np.vstack([np.c_[kx, ky], B2, B1[::-1]])
 bX, bY = ring[:, 0], ring[:, 1]
 
-cmap = plt.get_cmap('turbo')
+# b and c: one light-to-dark red ramp, so a reach that must wait for more sequential steps is
+# redder (slower); d: one blue outside that ramp, since every reach is solved at once (faster)
+cmap = plt.get_cmap('Blues')   # b and c in light-to-mid blues by step order; d in one deeper blue
+CMAP_LO, CMAP_HI = 0.30, 0.80
+FAST_BLUE = '#08519c'
+# font sizes, one step above the paper1 defaults at the request of the 2026-11-23 review
+FS_LETTER, FS_TITLE, FS_SUB, FS_ANN = 11.0, 10.5, 10.0, 9.0
 # the layout was designed on a 5.3 in canvas; it is scaled to the print width as a whole,
 # and the hand-placed schematic keeps its own margins, so the constrained layout is off
-fig = plt.figure(figsize=(PW, 2.11 * PW / 5.3), layout='none')
+H_TOP = 2.11 * PW / 5.3                       # the row a-d, unchanged
+# panel e (the change along one river) is now its own figure, fig_wave_attenuation.py;
+# FIG1_WITH_E=1 draws it under a-d again as before
+WITH_E = os.environ.get('FIG1_WITH_E', '0') == '1'
+H_E = 52.0 / 25.4 if WITH_E else 0.0           # panel e below it
+H_ALL = H_TOP + H_E
+fig = plt.figure(figsize=(PW, H_ALL), layout='none')
 gsp = fig.add_gridspec(1, 4, width_ratios=[1.12, 1, 1, 1], wspace=0.03,
-                       left=0.022, right=0.995, top=0.875, bottom=0.095)
+                       left=0.022, right=0.995, top=(H_E + 0.83 * H_TOP) / H_ALL,
+                       bottom=(H_E + 0.15 * H_TOP) / H_ALL)
 
 axa = fig.add_subplot(gsp[0])
 amax = accv[mb].max()
@@ -239,22 +252,23 @@ axa.legend(handles=[
     Line2D([], [], color='#2e79b8', lw=2.2, label='River'),
     Line2D([], [], color='black', lw=1.2, label='Basin'),
     Line2D([], [], marker='o', mfc='white', mec='#333', ls='none', ms=5.5, label='Outlet'),
-], loc='lower left', fontsize=8.0, frameon=False, handlelength=1.1,
-    handletextpad=0.5, borderaxespad=0.0)
+], loc='lower left', fontsize=FS_ANN, frameon=False, handlelength=1.1,
+    handletextpad=0.5, borderaxespad=0.0, borderpad=0.0)
 xo_, yo_ = X[seine_root], Y[seine_root]
 _ar = FLOW_ARROW
 axa.annotate('', xy=(xo_+_ar['dx'], yo_+_ar['y0']), xytext=(xo_+_ar['dx'], yo_+_ar['y1']),
              arrowprops=dict(arrowstyle='-|>', color='#333', lw=1.0, mutation_scale=9))
 axa.text(xo_+_ar['dx']+_ar['text_dx'], yo_+(_ar['y0']+_ar['y1'])/2, 'Flow direction',
-         fontsize=8.0, color='#333', rotation=90, ha='center', va='center')
+         fontsize=FS_ANN, color='#333', rotation=90, ha='center', va='center')
 TITLES = [(axa, 'a', 'A river network')]   # letter and title go on once the panels are placed
-axa.text(0.5, -0.01, 'The same network is solved\nin three ways', transform=axa.transAxes,
-         fontsize=8.0, ha='center', va='top', color='#333')
+axa.text(0.5, -0.01, 'The same routing is solved\nin three ways', transform=axa.transAxes,
+         fontsize=FS_SUB, ha='center', va='top', color='#333')
 
-def reach_panel(ax, letter, title, sub_t, num_of, vmax):
+def reach_panel(ax, letter, title, sub_t, num_of, vmax, text_of=None, color=None):
+    colr = (lambda i: color) if color else (lambda i: cmap(CMAP_LO + (CMAP_HI-CMAP_LO)*(num_of(i)-1)/max(vmax-1,1)))
     allpts = [chaikin(simplify(np.c_[X[ch], Y[ch]]), 3) for ch in reaches]
     for i, pts in enumerate(allpts):
-        col = cmap(0.08 + 0.84*num_of(i)/max(vmax,1))
+        col = colr(i)
         ax.plot(pts[:,0], pts[:,1], color=col, lw=1.9, solid_capstyle='round', zorder=2)
     lines = np.vstack(allpts)
 
@@ -279,7 +293,7 @@ def reach_panel(ax, letter, title, sub_t, num_of, vmax):
         if np.hypot(q[0]-anchor[0], q[1]-anchor[1]) > LEADER_DIST:   # 离河段远时画引线
             ax.plot([q[0], anchor[0]], [q[1], anchor[1]], color='#9aa0a6',
                     lw=0.55, zorder=3)
-        ax.text(q[0], q[1], str(num_of(i)), fontsize=8.0,
+        ax.text(q[0], q[1], text_of(i) if text_of else str(num_of(i)), fontsize=FS_ANN,
                 ha='center', va='center', zorder=4, color='#222',
                 bbox=dict(boxstyle='square,pad=0.16', fc='white', ec=col, lw=0.8))
 
@@ -305,7 +319,7 @@ def reach_panel(ax, letter, title, sub_t, num_of, vmax):
 
     for i in order_idx:
         pts = allpts[i]
-        col = cmap(0.08 + 0.84*num_of(i)/max(vmax,1))
+        col = colr(i)
         if i in beside:
             base, off = beside[i]
             q = spot[base] + off
@@ -319,15 +333,17 @@ def reach_panel(ax, letter, title, sub_t, num_of, vmax):
     ax.scatter([X[seine_root]], [Y[seine_root]], s=36, facecolors='white',
                edgecolors='#333', lw=1.0, zorder=3)
     TITLES.append((ax, letter, title))
-    ax.text(0.5, -0.01, sub_t, transform=ax.transAxes, fontsize=8.0,
+    ax.text(0.5, -0.01, sub_t, transform=ax.transAxes, fontsize=FS_SUB,
             ha='center', va='top', color='#333')
 
 reach_panel(fig.add_subplot(gsp[1]), 'b', 'Serial scheme',
-            f'One reach after another\n{R} sequential steps', lambda i: serial[i], R)
-reach_panel(fig.add_subplot(gsp[2]), 'c', 'Partly parallel scheme',
-            f'One level at a time\n{Lr} sequential steps', lambda i: rlvl[i]+1, Lr)
-reach_panel(fig.add_subplot(gsp[3]), 'd', 'Fully parallel scheme',
-            'All reaches at once\nA few iterations', lambda i: 1, 1)
+            f'One reach after another\n({R} sequential steps)', lambda i: serial[i], R)
+reach_panel(fig.add_subplot(gsp[2]), 'c', 'Partially parallel\nscheme',
+            f'One level at a time\n({Lr} sequential steps)', lambda i: rlvl[i]+1, Lr)
+axd = fig.add_subplot(gsp[3])
+reach_panel(axd, 'd', 'Fully parallel scheme\n(SURGE)',
+            'All reaches at once\n($k$ sequential steps)', lambda i: 1, 1,
+            text_of=lambda i: '$j$', color=FAST_BLUE)   # every reach in each iteration j = 1, ..., k (j as in the equations)
 
 allX = np.r_[X[rc], bX]; allY = np.r_[Y[rc], bY]   # 只按画出的河网+边界取画幅
 # Every panel draws the network at one scale and over one vertical range, and every axes
@@ -355,26 +371,140 @@ for ax, b in zip(fig.axes, boxes):
 # the reaches with their number boxes in b-d, so title and drawing share one left edge.
 # The drawing is centred in its column, so aligning to the column edge put the titles left
 # of the networks
+# key for panel d: the box j is the iteration, 1 to k
+axd.text(0.04, 0.10, '$j$', transform=axd.transAxes, fontsize=FS_ANN, ha='center', va='center', color='#222',
+         bbox=dict(boxstyle='square,pad=0.16', fc='white', ec=FAST_BLUE, lw=0.8))
+axd.text(0.085, 0.10, '= (1 to $k$)', transform=axd.transAxes, fontsize=FS_ANN, ha='left', va='center', color='#222')
 fig.canvas.draw()
 _r = fig.canvas.get_renderer()
 TITLE_PAD_PT, LETTER_GAP_PT = 3.0, 1.2 * 72 / 25.4
+TITLE_TOP_PT = TITLE_PAD_PT + 2.25 * FS_TITLE   # room for a two-line title above the drawing
+DRAW_LEFT = {}
 for ax, letter, title in TITLES:
     xs = [ln.get_window_extent(_r).x0 for ln in ax.lines if len(ln.get_xdata()) > 0]
     xs += [tx.get_bbox_patch().get_window_extent(_r).x0 for tx in ax.texts
            if tx.get_bbox_patch() is not None]
-    left = ax.transAxes.inverted().transform((min(xs), 0.0))[0]
-    lt = ax.annotate(letter, xy=(left, 1.0), xycoords='axes fraction', xytext=(0.0, TITLE_PAD_PT),
-                     textcoords='offset points', ha='left', va='baseline', fontsize=10.0,
+    DRAW_LEFT[ax] = ax.transAxes.inverted().transform((min(xs), 0.0))[0]
+    # the letter starts where the drawing starts; the title is centred over the panel,
+    # like the text under it
+    lt = ax.annotate(letter, xy=(DRAW_LEFT[ax], 1.0), xycoords='axes fraction', xytext=(0.0, TITLE_TOP_PT),
+                     textcoords='offset points', ha='left', va='top', fontsize=FS_LETTER,
                      fontweight='bold', annotation_clip=False)
-    w_pt = lt.get_window_extent(_r).width * 72.0 / fig.dpi
-    ax.annotate(title, xy=(left, 1.0), xycoords='axes fraction',
-                xytext=(w_pt + LETTER_GAP_PT, TITLE_PAD_PT), textcoords='offset points',
-                ha='left', va='baseline', fontsize=9.0, annotation_clip=False)
+    tt = ax.annotate(title, xy=(0.5, 1.0), xycoords='axes fraction',
+                     xytext=(0.0, TITLE_TOP_PT), textcoords='offset points',
+                     ha='center', va='top', fontsize=FS_TITLE, annotation_clip=False)
+    # a title too wide to be centred without running into its letter starts just after the letter
+    gap_px = LETTER_GAP_PT * fig.dpi / 72.0
+    over_px = lt.get_window_extent(_r).x1 + gap_px - tt.get_window_extent(_r).x0
+    if over_px > 0:
+        tt.set_position((over_px * 72.0 / fig.dpi, TITLE_TOP_PT))
 
+
+# the legend of a starts where the letter a and its title start
+_rA = fig.canvas.get_renderer()
+_xa_ = DRAW_LEFT[fig.axes[0]]   # the legend starts where the basin outline starts
+_lg = fig.axes[0].get_legend()
+_lg.set_bbox_to_anchor((0.0, 0.0), transform=fig.axes[0].transAxes)   # left of the basin, clear of its outline at the larger font
+if WITH_E:
+    # ---------------- panel e: a change entering one river, within one time step ----------------
+    # the implicit cell equation of section 2.1 on a chain of ten cells; Courant number 1 at a base
+    # flow of 100 m3/s, and the inflow at the upstream end rises to 200 m3/s in this time step
+    def _e_numbers(N=8, DT=4320.0, BETA=0.6, n=0.03, S0=1e-3, P=30.0, Q0=100.0, QIN=200.0, K=3):
+        ALPHA = (n * P ** (2 / 3) / np.sqrt(S0)) ** BETA
+        DX = DT / (ALPHA * BETA * Q0 ** (BETA - 1))
+        def solve(qin, qold):
+            rhs = DT / DX * qin + ALPHA * qold ** BETA
+            Q = np.maximum(qold, 1e-6)
+            for _ in range(30):
+                f = DT / DX * Q + ALPHA * Q ** BETA - rhs
+                Q = np.maximum(Q - f / (DT / DX + ALPHA * BETA * Q ** (BETA - 1)), 1e-6)
+            return Q
+        qold = np.full(N, Q0); serial = np.empty(N); up = QIN
+        for c in range(N):
+            serial[c] = solve(up, qold[c]); up = serial[c]
+        q = qold.copy(); left = []
+        for i in range(K):
+            q = solve(np.r_[QIN, q[:-1]], qold); left.append((serial - q) / (QIN - Q0))
+        assert min(l.min() for l in left) > -1e-9, 'SURGE above the serial solution somewhere'
+        return (serial - qold) / (QIN - Q0), left
+    change, left = _e_numbers()
+    NE = len(change); xe = np.arange(NE)
+    BLUE_E, RED_E, GREY_E, INK_E = '#2e79b8', '#C0392B', '#D5D8DC', '#333333'
+    xb0 = fig.axes[1].get_position().x0 + 0.01        # bars span the columns of b to d
+    xb1 = fig.axes[3].get_position().x1 - 0.005
+    top_e = (H_E - 9.0 / 25.4) / H_ALL                # below the title line of e
+    bot_e = 7.0 / 25.4 / H_ALL                        # room for Upstream / Downstream
+    E_ROWS = []
+    rows_e = [([('Serial scheme (panel ', 'normal'), ('b', 'bold'), (')', 'normal')], change, BLUE_E, None)] + \
+             [([('Fully parallel scheme (panel ', 'normal'), ('d', 'bold'), (') after iteration $i=%d$' % (i + 1), 'normal')], left[i], RED_E, change) for i in range(len(left))]
+    hrow = (top_e - bot_e) / len(rows_e)
+    for r, (lab, v, col, ghost) in enumerate(rows_e):
+        ax_ = fig.add_axes([xb0, top_e - (r + 1) * hrow + 0.004, xb1 - xb0, hrow - 0.008])
+        if ghost is not None:
+            ax_.bar(xe, ghost, width=0.56, color=GREY_E, lw=0, zorder=1)
+        ax_.bar(xe, np.where(v >= 0.005, v, 0), width=0.56, color=col, lw=0, zorder=2)
+        lab_at = range(4) if ghost is None else [int(np.argmax(v))]   # the halving shows in the first row
+        for j in lab_at:
+            ax_.text(j, v[j] + 0.03, '%.2f' % v[j], ha='center', va='bottom', fontsize=8, color=col, fontweight='bold')
+        ax_.axhline(0, color=INK_E, lw=0.8, zorder=3)
+        ax_.set_xlim(-0.6, NE - 0.4); ax_.set_ylim(0, 0.66); ax_.axis('off')
+        E_ROWS.append((ax_, lab))
+        if r == 0:                                     # labels on the data instead of a key
+            ax_.text(NE - 0.4, 0.08, 'Rise of the discharge in each cell,\nserial solution', fontsize=8, color=BLUE_E, ha='right', va='bottom', linespacing=1.1)
+        if r == 1:
+            ax_.text(NE - 0.4, 0.08, 'Serial solution minus the fully\nparallel scheme, in each cell', fontsize=8, color=RED_E, ha='right', va='bottom', linespacing=1.1)
+        if r == 2:
+            ax_.text(NE - 0.4, 0.08, 'Cells where the fully parallel\nscheme equals the serial solution', fontsize=8, color='#7f8790', ha='right', va='bottom', linespacing=1.1)
+        if r == len(rows_e) - 1:
+            ax_.text(-0.3, -0.08, 'Upstream', fontsize=8, color='#555', ha='left', va='top')
+            ax_.text(NE - 0.7, -0.08, 'Downstream', fontsize=8, color='#555', ha='right', va='top')
+    # letter e and its title start where the letter a starts
+    _ra = fig.canvas.get_renderer()
+    _la = [t for t in fig.axes[0].texts if t.get_text() == 'a'][0]
+    _x_a = fig.transFigure.inverted().transform((_la.get_window_extent(_ra).x0, 0))[0]
+    _le = fig.text(_x_a, (H_E - 4.5 / 25.4) / H_ALL, 'e', fontsize=10, fontweight='bold', va='baseline')
+    _w = fig.transFigure.inverted().transform((_le.get_window_extent(_ra).width, 0))[0] - fig.transFigure.inverted().transform((0, 0))[0]
+    fig.text(_x_a + _w + 1.2 / 25.4 / PW, (H_E - 4.5 / 25.4) / H_ALL,
+             'Change of the discharge along one river in one time step when the upstream inflow rises by 1', fontsize=9, va='baseline')
+    def _runs(x, y, parts):
+        # one label from several pieces, so the panel letters in it can be bold like the panel letters
+        t = None
+        for txt, wt in parts:
+            t = fig.text(x, y, txt, ha='left', va='bottom', fontsize=8, color=INK_E, fontweight=wt)
+            x = fig.transFigure.inverted().transform((t.get_window_extent(_ra).x1, 0))[0]
+        return t
+    _labs = [_runs(_x_a, _ax.get_position().y0, _lab) for _ax, _lab in E_ROWS]   # labels start at the letter e
+    # the bars start just after the longest label, so no gap is left between labels and bars
+    _inv = fig.transFigure.inverted()
+    _x_end = max(_inv.transform((t.get_window_extent(_ra).x1, 0))[0] for t in _labs)
+    _x0 = _x_end + 3.0 / 25.4 / PW
+    for _ax, _lab in E_ROWS:
+        _p = _ax.get_position()
+        _ax.set_position([_x0, _p.y0, xb1 - _x0, _p.height])
 import shutil
 _FIG = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'figures')
-fig.savefig(os.path.join(_FIG, 'fig_method.png'), dpi=600)
-fig.savefig(os.path.join(_FIG, 'fig_method.pdf'))
+# centre the drawing on the page: shift every axes and figure text so the blank margins on
+# the left and right of what is drawn are equal (the canvas width, and so the print size, stay)
+fig.canvas.draw()                                  # measure the ink actually drawn, in pixels
+_img = np.asarray(fig.canvas.buffer_rgba())[..., :3].min(axis=2)
+_cols = np.nonzero((_img < 235).any(axis=0))[0]
+_Wpx = _img.shape[1]
+_dx = ((_Wpx - 1 - _cols[-1]) - _cols[0]) / 2.0 / _Wpx   # figure fraction, negative moves left
+for _ax in fig.axes:
+    _p = _ax.get_position(); _ax.set_position([_p.x0 + _dx, _p.y0, _p.width, _p.height])
+for _t in fig.texts:
+    _x, _y = _t.get_position(); _t.set_position((_x + _dx, _y))
+# trim the blank space above and below the drawing to 1 mm, as in the other figures, so the
+# caption sits close to the figure; the full width is kept, so the centring above stays
+from matplotlib.transforms import Bbox
+_rows = np.nonzero((_img < 235).any(axis=1))[0]
+_Hpx = _img.shape[0]
+_pad = 1.0 / 25.4                                  # inches
+_y0 = (_Hpx - 1 - _rows[-1]) / fig.dpi - _pad      # from the bottom, inches
+_y1 = (_Hpx - _rows[0]) / fig.dpi + _pad
+_bb = Bbox([[0.0, max(_y0, 0.0)], [PW, min(_y1, H_ALL)]])
+fig.savefig(os.path.join(_FIG, 'fig_method.png'), dpi=600, bbox_inches=_bb)
+fig.savefig(os.path.join(_FIG, 'fig_method.pdf'), bbox_inches=_bb)
 _COPY_TO = os.environ.get('SURGE_FIGURE_COPY')      # optional second destination, e.g. a manuscript tree
 if _COPY_TO:
     for _f in ('fig_method.png', 'fig_method.pdf'):

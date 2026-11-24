@@ -79,7 +79,7 @@ class TorchRouter:
                 alpha=a_full[..., cells], n_iter=n_newton, dx=self.dx[cells])
         return qnew
 
-    def substep_parallel(self, qold, q, alpha=None, iterations=3, n_newton=6):
+    def substep_parallel(self, qold, q, alpha=None, iterations=3, n_newton=4):
         """k iterations over every cell at once. qold, q: (N,) or (B, N)."""
         qk = qold.clamp_min(0.0)
         for _ in range(iterations):

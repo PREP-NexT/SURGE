@@ -13,10 +13,10 @@
   <a href="https://github.com/PREP-NexT/SURGE"><img src="https://badges.frapsoft.com/os/v1/open-source.svg?v=103" alt="Open Source"></a>
 </p>
 
-# SURGE: Scalable Upstream-decoupled Routing on GPU-Engine
+# SURGE: Scalable Upstream-decoupled Routing on GPU Engine
 
 **SURGE** is a GPU-parallel solver for the implicit kinematic-wave river routing
-used by global hydrological models (CWatM, LISFLOOD, PCR-GLOBWB, wflow).
+used by global hydrological models (CWatM, LISFLOOD, wflow).
 Routing normally advances cell by cell down the drainage network in strict
 upstream-to-downstream order, a serial recursion that has kept it on a single
 CPU core. SURGE decouples every cell from its upstream neighbours by recasting
@@ -27,11 +27,11 @@ serial solution.
 - The per-iteration contraction is `g = Cr / (1 + Cr)`, set by the local
   Courant number `Cr`, so the iterations a network needs follow that number,
   two on the global 30 arc-minute network and thirty on the 1 arc-minute one.
-- One NVIDIA A100 routes the global networks **137 to 531 times** faster than
-  the serial C kernel on one CPU core. A simulated year of the 56-million-cell
+- One NVIDIA A100 routes the global networks **137 to 505 times** faster than
+  the serial C++ kernel on one CPU core. A simulated year of the 56-million-cell
   1 arc-minute network takes about 15 minutes instead of about 34 hours.
 - Managed reservoirs (the full GRanD set) are carried as a storage-based
-  release at each dam cell, which costs 1.3 to 7.9 per cent more time and no
+  release at each dam cell, which costs 1.3 to 8.0 per cent more time and no
   extra iterations.
 - Every operation is a tensor primitive, so the solver batches over ensembles;
   being built from differentiable operations, it also supports reverse-mode
@@ -45,16 +45,15 @@ modification.
 
 This repository accompanies the manuscript:
 
-> Zhanwei Liu and Xiaogang He.
-> **SURGE: a GPU-parallel kinematic-wave river routing model** (in preparation).
-> Department of Civil and Environmental Engineering, National University of
-> Singapore.
+> Zhanwei Liu, Jiangchao Qiu, Peter Burek, Ming Pan, Kei Yoshimura, Hyungjun Kim
+> and Xiaogang He.
+> **SURGE: parallel kinematic wave river routing on GPUs** (in preparation).
 
 ---
 
 ## Table of contents
 
-- [SURGE: Scalable Upstream-decoupled Routing on GPU-Engine](#surge-scalable-upstream-decoupled-routing-on-gpu-engine)
+- [SURGE: Scalable Upstream-decoupled Routing on GPU Engine](#surge-scalable-upstream-decoupled-routing-on-gpu-engine)
   - [Citation](#citation)
   - [Table of contents](#table-of-contents)
   - [System requirements](#system-requirements)
@@ -98,6 +97,12 @@ conda activate surge
 pip install -e .
 ```
 
+If `python -c "import torch; print(torch.cuda.is_available())"` then prints
+`False` on a machine with a GPU, the PyTorch wheel was built for a newer CUDA
+than the driver supports. Install the wheel that matches the driver, for
+example `pip install torch --index-url https://download.pytorch.org/whl/cu126`
+for a CUDA 12.6 driver (`nvidia-smi` shows the version).
+
 About five minutes on a desktop with a warm conda cache, most of it spent
 downloading PyTorch.
 
@@ -120,7 +125,7 @@ surge/                       Solver package
 ├── network.py               Routing-network loader (levels, edge lists)
 ├── kinematic_torch.py       Parallel and ordered substeps, Newton kernel
 ├── reservoir.py             Storage-based reservoir release (GRanD)
-└── serial_ref.py            Bridge to CWatM's serial C kernel (reference)
+└── serial_ref.py            Bridge to CWatM's serial C++ kernel (reference)
 build/                       Construct networks from public flow-direction maps
 ├── build_multiresolution.py 30/15/5 arc-minute networks (CWatM/Eilander maps)
 ├── build_from_cama.py       3/1 arc-minute networks (CaMa-Flood maps)
@@ -156,10 +161,11 @@ q  = torch.zeros(N, device="cuda")                    # discharge state
 qd = torch.full((N,), 1e-4, device="cuda")            # lateral inflow (m^2/s)
 
 # one routing time step, the iterations the network needs (seven at 5 arc-minutes)
-q = router.substep_parallel(q, qd, iterations=7, n_newton=4)
+q_surge = router.substep_parallel(q, qd, iterations=7, n_newton=4)
 
-# exact level-scheduled traversal (machine-precision reference)
-q_exact = router.substep_ordered(q, qd)
+# the same step level by level, which returns the serial solution
+q_exact = router.substep_ordered(q, qd, n_newton=4)
+print(float((q_surge - q_exact).abs().max()))       # what the truncated iteration leaves
 ```
 
 State and parameters broadcast over a leading ensemble axis (`(B, N)`
@@ -205,8 +211,23 @@ The builders construct self-contained `.npz` network files (topology, levels,
 edge lists, synthetic hydraulic geometry) from public flow-direction maps:
 
 ```bash
-python build/build_multiresolution.py   # 30', 15', 5' from CWatM/Eilander maps
-python build/build_from_cama.py         # 3', 1'  from CaMa-Flood maps
+# 30', 15' and 5' from the 5 arc-minute local drain direction map of CWatM
+# (Eilander et al.), written as routing_static_<tag>.npz into the folder given
+python build/build_multiresolution.py ldd_5min.nc networks/
+# 3' and 1' from CaMa-Flood; the folder holds params.txt and nextxy.bin
+python build/build_from_cama.py glb_03min/ networks/routing_static_03min.npz
+python build/build_from_cama.py glb_01min/ networks/routing_static_01min.npz
+# the channel width of the paper, w = 3*sqrt(U), written beside each file as *_area.npz
+python build/patch_alpha_area.py networks/routing_static_*.npz
+```
+
+The experiments and jobs read a network as `routing_<tag>.npz` from `SURGE_DATA`
+(for example `routing_05min.npz`), so link or rename each `*_area.npz` file to
+that name:
+
+```bash
+cd networks && for t in 30min 15min 05min 03min 01min; do
+  ln -s routing_static_${t}_area.npz routing_${t}.npz; done
 ```
 
 Data sources are documented in the manuscript's Open Research section.
@@ -214,8 +235,8 @@ Data sources are documented in the manuscript's Open Research section.
 ### 2. Route and benchmark
 
 ```bash
-python examples/route_runoff.py routing_05min.npz runoff.npy out.npy 7
 python examples/regrid_runoff.py routing_05min.npz qtot_2010.npz runoff.npy
+python examples/route_runoff.py routing_05min.npz runoff.npy out.npy 7
 python examples/map_grand_dams.py routing_05min.npz GRanD_v13.csv res_grand.npz \
     --lat0 89.9583 --dlat 0.083333 --lon0 -179.9583 --dlon 0.083333
 ```
@@ -255,6 +276,9 @@ python experiments/bench_unified_timing.py time gpu_ordered net.npz steady.npz o
 The configurations are `surge`, `gpu_ordered`, `cpu_parallel` and `cpu_serial`,
 and `SURGE_ITERATIONS` sets the iteration count each network runs at. The
 `cpu_serial` configuration calls the CWatM kernel, so it needs `GPU_KWR_T5_SO`.
+`experiments/bench_timestep.py` runs the same protocol at another routing time
+step, for Table S6. `jobs/pbs_timing_gpu.sh` and `jobs/pbs_timing_cpu.sh` are the
+two jobs that produced the timings of Table S5, Figure 7, Figure 9a and Table S6.
 
 Every experiment of the paper was submitted to a PBS cluster, and `jobs/` holds
 the scripts that did it, with the walltime and the memory each stage needed and
@@ -273,18 +297,19 @@ script and data of each one.
 
 ## Key results
 
-Single-run wall-clock per simulated day of one NVIDIA A100 against the serial
-C kernel on one core of an AMD EPYC 7713, over the global river network. Each
+Wall-clock per simulated day of one NVIDIA A100 against the serial
+C++ kernel on one core of an AMD EPYC 7713, over the global river network. Each
 network runs at the number of iterations `k` it needs to reproduce the serial
-solution, and a simulated day is 20 routing time steps of 4,320 s:
+solution, and a simulated day is 20 routing time steps of 4,320 s. Each time
+is the mean over 600 time steps, the GPU times the median of three runs:
 
 | Resolution | Cells | Levels | `k` | SURGE | CPU-serial | Speedup |
 |-----------:|------:|-------:|----:|------:|-----------:|--------:|
-| 30 arc-min | 70,648 | 116 | 2 | 1.88 ms | 327 ms | 174x |
-| **15 arc-min** | **267,950** | **251** | **3** | **2.37 ms** | **1.26 s** | **531x** |
-| 5 arc-min | 2,307,532 | 782 | 7 | 26.0 ms | 12.6 s | 484x |
-| 3 arc-min | 6,222,566 | 1,436 | 11 | 105 ms | 35.9 s | 341x |
-| 1 arc-min | 55,812,946 | 4,696 | 30 | 2.47 s | 339 s | 137x |
+| 30 arc-min | 70,648 | 116 | 2 | 1.96 ms | 327 ms | 167x |
+| **15 arc-min** | **267,950** | **251** | **3** | **2.49 ms** | **1.26 s** | **505x** |
+| 5 arc-min | 2,307,532 | 782 | 7 | 25.3 ms | 12.7 s | 501x |
+| 3 arc-min | 6,222,566 | 1,436 | 11 | 105 ms | 36.2 s | 346x |
+| 1 arc-min | 55,812,946 | 4,696 | 30 | 2.47 s | 338 s | 137x |
 
 The speedup peaks at the middle resolutions. A coarse network gives the card
 too little work to cover the cost of starting each update, and a fine one needs

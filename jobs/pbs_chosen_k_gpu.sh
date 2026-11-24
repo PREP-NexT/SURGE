@@ -10,6 +10,8 @@
 # The GPU timings that the sweeps do not cover: the reservoirs at the count each network
 # needs, and the 26 basins at the thirty the 1 arc-minute network needs. The 1 arc-minute
 # line is here as well, because the sweep that was run first asked for twenty-nine.
+# The paper now takes only the 26-basin line from this job (Figure 8, ASPIRE 2A, 2026-09-19).
+# The network and reservoir timings it reports come from pbs_timing_gpu.sh.
 # Protocol unchanged: 2 mm/day steady state, 10 warm-up steps, 600 timed.
 set -e
 A=${SURGE_REPO:-$PBS_O_WORKDIR}

@@ -5,11 +5,11 @@
 # have finished. The 1 arc-minute serial year (~34 h on one EPYC core) is split into two
 # chained jobs that resume from its 30-day checkpoints, and its SURGE years into three jobs.
 set -e
-A=${SURGE_REPO:-$PBS_O_WORKDIR}
-J=$A/paper1_gpu_routing/global_results/code/pbs_year_resolution.sh
+A=${SURGE_REPO:-$(cd "$(dirname "$0")/.." && pwd)}
+J=$A/jobs/pbs_year_resolution.sh
 GPU=ncpus=16:ngpus=1
 # job names: PBS takes at most 15 characters and no colons, so y<res><stage>, e.g. y01ser2
-q() { qsub -N "$1" -l "$2" -l walltime=$3 -v "$4" ${5:+-W depend=$5} $J; }
+q() { qsub ${PBS_PROJECT:+-P "$PBS_PROJECT"} -N "$1" -l "$2" -l walltime=$3 -v "$4" ${5:+-W depend=$5} $J; }
 
 # tag | spin walltime | serial walltime x chained jobs | gpu iteration counts, a dash
 # to let the stage find them | gpu walltime | metrics mem, walltime

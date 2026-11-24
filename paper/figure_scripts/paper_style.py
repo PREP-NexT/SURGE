@@ -155,7 +155,7 @@ def finish(fig, out_paths, dpi=300):
 # Paper1 figures are built at the 166 mm text width, so a size set here is the size that
 # prints. Words stay in Myriad Pro and equations are set in STIX, as in Figure 2, so a
 # symbol in a figure looks the way it does in the text. Sizes follow
-# paper1_gpu_routing/画图规范与经验.md: 8 pt for ticks, axis labels and legends, 9 pt for
+# the paper's figure style: 8 pt for ticks, axis labels and legends, 9 pt for
 # titles inside a figure, and nothing smaller than 8 pt.
 PRINT_WIDTH_IN = 166.0 / 25.4
 
@@ -176,7 +176,7 @@ def setup_paper1_style() -> None:
 
 
 def panel_label(ax, letter, pad_pt=None, gap_mm=1.2):
-    """Panel letter per paper1_gpu_routing/画图规范与经验.md section 4: bold 10 pt lower case,
+    """Panel letter: bold 10 pt lower case,
     outside the frame at its top left. It sits on the baseline of the axes title, its right
     edge a small gap left of the frame, so the title keeps its place over the frame and no
     data moves. It is anchored to the axes, so a constrained layout makes room for it."""
@@ -186,3 +186,26 @@ def panel_label(ax, letter, pad_pt=None, gap_mm=1.2):
                        xytext=(-gap_mm * 72.0 / 25.4, pad_pt), textcoords="offset points",
                        ha="right", va="baseline", fontsize=10.0, fontweight="bold",
                        annotation_clip=False)
+
+
+def myriad_ticks(fig) -> None:
+    """Set every tick label of the figure, colour bars included, in Myriad Pro.
+
+    Equations and symbols (k, KGE_c) stay in STIX, but numbers on the axes, also the
+    powers of ten that mathtext builds, are lettering and use the text face. The tick
+    labels are switched to the 'custom' mathtext set, whose faces (mathtext.rm and
+    mathtext.it = 'sans') resolve to Myriad Pro. Call it just before saving: ticks made
+    later copy the setting from the first tick of their axis. (2026-11-03)"""
+    mpl.rcParams.update({"mathtext.rm": "sans", "mathtext.it": "sans:italic",
+                         "mathtext.bf": "sans:bold", "mathtext.sf": "sans"})
+    import re
+    fig.canvas.draw()
+    for ax in fig.axes:
+        for axis in (ax.xaxis, ax.yaxis):
+            for tick in axis.get_major_ticks() + axis.get_minor_ticks():
+                for lab in (tick.label1, tick.label2):
+                    # only numbers: a label with a symbol in it, such as '$k$ = 7', keeps STIX
+                    maths = ''.join(re.findall(r'\$([^$]*)\$', lab.get_text()))
+                    maths = re.sub(r'\\(mathdefault|times|minus)', '', maths)
+                    if not re.search(r'[A-Za-z]', maths):
+                        lab.set_math_fontfamily("custom")

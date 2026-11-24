@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "surge-routing"
 version = "0.1.0"
-description = "SURGE: Scalable Upstream-decoupled Routing on GPU-Engine — kinematic-wave river routing via a convergent fixed-point reformulation"
+description = "SURGE: Scalable Upstream-decoupled Routing on GPU Engine — kinematic-wave river routing via a convergent fixed-point reformulation"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "GPL-3.0-or-later" }

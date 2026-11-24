@@ -11,11 +11,15 @@
 # CPU-serial (the CWatM C++ kernel, the same t5_linux.so binary as the workstation) and
 # CPU-parallel (the fixed point on 24 threads) at five resolutions, then CPU-serial on the
 # 26 basins of the 1 arc-minute network.
+# The paper now takes only the 26-basin line from this job (Figure 8, ASPIRE 2A, 2026-09-14).
+# The CPU-serial and CPU-parallel timings of the networks come from pbs_timing_cpu.sh.
 set -e
 A=${SURGE_REPO:-$PBS_O_WORKDIR}
 cd $A
 module load pytorch/2.6.0-py3-cu11.8
-export GPU_KWR_T5_SO=$A/cwatm_fork/cwatm/hydrological_modules/routing_reservoirs/t5_linux.so
+# the CWatM serial kernel, compiled by the user; see the main README
+: "${GPU_KWR_T5_SO:?set GPU_KWR_T5_SO to the compiled CWatM t5 library}"
+export GPU_KWR_T5_SO
 B=experiments/bench_unified_timing.py
 D=${SURGE_DATA:-data}
 S=$D/timing_states

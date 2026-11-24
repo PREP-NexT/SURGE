@@ -1,5 +1,5 @@
 {
- "note": "the 5 arc-minute 2010 year with and without the GRanD dams: 1 - KGE at the 5th percentile and at the median over the evaluated cells, against the serial solution (no dams) and against the level-by-level GPU solution (dams); bench_year_resolution.py. The dam curve was re-run on 2026-09-23 on an RTX A6000 after the release was clipped to the storage bounds (run_dams_year_local.sh); the no-dam curve is the earlier ASPIRE A100 run, which the reservoir code does not touch. Both curves are shown to k = 10, the range the no-dam run covers.",
+ "note": "the 5 arc-minute 2010 year with and without the GRanD dams: 1 - KGE at the 5th percentile and at the median over the evaluated cells, against the serial solution (no dams) and against the level-by-level GPU solution (dams); bench_year_resolution.py. The dam curve comes from the stages of jobs/pbs_year_dams.sh, re-run on 2026-09-23 on an RTX A6000 after the release was clipped to the storage bounds; the no-dam curve is the ASPIRE A100 run of jobs/pbs_year_resolution.sh, which the reservoir code does not touch. Both curves are shown to k = 10, the range the no-dam run covers.",
  "with_dams": {
   "1": {
    "p5": 0.4784436102923959,

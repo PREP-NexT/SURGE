@@ -13,8 +13,7 @@ Two GPU schemes:
   * TorchRouter.substep_ordered  -- one topological level at a time, which
                                     returns the serial solution
 
-See the accompanying paper: "SURGE: a GPU-parallel kinematic-wave river routing
-model".
+See the accompanying paper: "SURGE: parallel kinematic wave river routing on GPUs".
 """
 from .network import RoutingNetwork
 from .kinematic_torch import TorchRouter

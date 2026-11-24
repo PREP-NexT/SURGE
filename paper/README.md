@@ -1,7 +1,7 @@
 # Paper figures
 
-Reproducible figures for the manuscript *"SURGE: a GPU-parallel kinematic-wave
-river routing model"*. Every figure is redrawn by one script that reads only the
+Reproducible figures for the manuscript *"SURGE: parallel kinematic wave river routing
+on GPUs"*. Every figure is redrawn by one script that reads only the
 compact data committed here, so no raw model output and no GPU is needed to
 reproduce them.
 
@@ -17,19 +17,23 @@ paper/
 | Manuscript | Script | Reads | Produces |
 |---|---|---|---|
 | Fig. 1, three ways to solve one network | `fig_method_seine.py` | a routing network built by `build/` | `fig_method.pdf/png` |
-| Fig. 2, the implicit difference | `fig_river_reach.py` | `river_reach_shapes.json`, `river_reach_text.json` | `fig_river_reach.pdf/png` |
-| Fig. 3, match to the serial solution at 5 arcmin | `fig_kge_convergence.py` | `metric_maps_serialC.npz`, `accuracy.json` | `fig_kge_convergence.pdf/png` |
-| Fig. 4, iterations each network needs | `fig_iterations_by_resolution.py` | `iterations_by_resolution.npz` | `fig_iterations_by_resolution.pdf/png` |
-| Fig. 5, wall-clock and speedup | `fig_timing_bars.py` | `resolution_scaling.json` | `fig_timing_bars.pdf/png` |
-| Fig. 6, 26 basins routed on their own | `fig_basin_speedup.py` | `bench_basins_display.json`, `basin_map_01min.npz`, `routing_static_30min.npz` | `fig_basin_speedup.pdf/png` |
-| Fig. 7, reservoir operation | `fig_reservoir.py` | `reservoir_timing.json`, `reservoir_convergence.json` | `fig_reservoir.pdf/png` |
+| Fig. 2, the implicit difference on one river reach | `fig_river_reach_block.py` | `river_reach_shapes.json`, `river_reach_text.json` | `fig_river_reach.pdf/png` |
+| Fig. 3, the iteration along one rain path | `fig_isometric_terrain.py` | the network of Fig. 1 | `fig_isometric.pdf/png` |
+| Fig. 4, how the iteration closes the gap on six cells | `fig_iteration_gap.py` | nothing (solves the six cells itself, with the solver in `fig_wave_attenuation.py`) | `fig_iteration_gap.pdf/png` |
+| Fig. 5, match to the serial solution at 5 arcmin | `fig_kge_convergence.py` | `metric_maps_serialC.npz`, `accuracy.json` | `fig_kge_convergence.pdf/png` |
+| Fig. 6, iterations each network needs | `fig_iterations_by_resolution.py` | `iterations_by_resolution.npz` | `fig_iterations_by_resolution.pdf/png` |
+| Fig. 7, wall-clock and speedup | `fig_timing_bars.py` | `resolution_scaling.json` | `fig_timing_bars.pdf/png` |
+| Fig. 8, 26 basins routed on their own | `fig_basin_speedup.py` | `bench_basins_display.json`, `basin_map_01min.npz`, `routing_static_30min.npz` | `fig_basin_speedup.pdf/png` |
+| Fig. 9, reservoir operation | `fig_reservoir.py` | `reservoir_timing.json`, `reservoir_convergence.json`, `reservoir_k7_scores.json` | `fig_reservoir.pdf/png` |
 
-`fig_method_seine.py` is the one script that needs a routing network rather than
-a distilled file, because it draws a real basin. Build one with
-`build/build_from_cama.py` and point the script at the folder holding it,
+`fig_method_seine.py` and `fig_isometric_terrain.py` are the two scripts that need
+a routing network rather than a distilled file, because they draw a real basin. Build the 5 arc-minute
+network with `build/build_multiresolution.py` and point the script at the folder holding
+`routing_static_05min.npz`,
 
 ```bash
 SURGE_DATA=/path/to/networks python fig_method_seine.py
+SURGE_DATA=/path/to/networks python fig_isometric_terrain.py
 ```
 
 ## What the data files hold
@@ -44,14 +48,16 @@ SURGE_DATA=/path/to/networks python fig_method_seine.py
 | `basin_map_01min.npz` | the 26 basins painted on a coarse grid, for the map |
 | `routing_static_30min.npz` | the 30 arcmin network, used for the land backdrop of the map |
 | `river_reach_shapes.json`, `river_reach_text.json` | the reach outlines and labels of the schematic |
-| `reservoir_timing.json` | wall-clock with and without the dams at 5, 3 and 1 arcmin |
+| `reservoir_timing.json` | wall-clock with and without the dams at 5, 3 and 1 arcmin, timed in the same job |
 | `reservoir_convergence.json` | 1 − KGE at the 5th percentile against the iteration count, with and without the dams |
+| `reservoir_k7_scores.json` | median KGE and NSE and the largest absolute bias at seven iterations, with and without the dams |
 
 ## Reproduce
 
 ```bash
 cd paper/figure_scripts
-python fig_river_reach.py
+python fig_river_reach_block.py
+python fig_iteration_gap.py
 python fig_kge_convergence.py
 python fig_iterations_by_resolution.py
 python fig_timing_bars.py
@@ -59,7 +65,9 @@ python fig_basin_speedup.py
 python fig_reservoir.py
 ```
 
-All of them need only `numpy`, `matplotlib` and `scipy`. The figures use the
+They need `numpy`, `matplotlib` and `scipy`; `fig_kge_convergence.py` also needs
+`ultraplot` and `cartopy` for the map, `fig_basin_speedup.py` needs `pyproj`, and
+`fig_river_reach_block.py` uses `pdftocairo` (poppler) for its PNG. The figures use the
 shared house style of `paper_style.py`, which falls back to the matplotlib
 defaults where the optional *Myriad Pro* font is absent. Paths are resolved
 relative to the script, so the commands work from any directory.

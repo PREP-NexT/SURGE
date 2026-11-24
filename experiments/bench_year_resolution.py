@@ -26,8 +26,8 @@ Stages, in this order (serial and gpu can run at the same time):
 
 The counts the paper reports are 2, 3, 7, 11 and 30, from the coarsest network to the
 finest, and the gpu stage finds each of them on its own: it is the first count whose
-5th percentile KGE over the evaluated cells reaches YEAR_KGE, 0.99 as section 3.3 sets
-it. The stage then runs one count past it, which is the curve each panel of Figure 4
+5th percentile KGE over the evaluated cells reaches YEAR_KGE, 0.99 as section 4.1 sets
+it. The stage then runs one count past it, which is the curve each panel of Figure 6
 carries across the threshold, and gives up at YEAR_KMAX, 50.
 
 Runoff: CWatM qtot of 2010 at 0.5 deg, read at the 0.5-deg cell holding each routing
@@ -60,7 +60,7 @@ KS = tuple(int(x) for x in os.environ.get('YEAR_KS', '1,2,3,4,5,6,7,8,9,10,20').
 PART = os.environ.get('METRICS_PART', '')   # a non-empty name writes this part of the k list
 # on its own, as summary_<part>.json and metrics_<part>.npz, for merge_metrics_parts.py
 C_MIN, BIG_MIN = 100.0, 10000.0
-KGE_THRESHOLD = float(os.environ.get('YEAR_KGE', 0.99))   # the criterion of section 3.3
+KGE_THRESHOLD = float(os.environ.get('YEAR_KGE', 0.99))   # the criterion of section 4.1
 KMAX = int(os.environ.get('YEAR_KMAX', 50))               # how far the gpu stage will go
 CKPT_DAYS = int(os.environ.get('SERIAL_CKPT_DAYS', 10))   # a 1 arc-minute day costs about
 # twelve minutes, so a wide checkpoint interval throws away hours when a job hits its walltime
@@ -139,6 +139,7 @@ def gpu_setup():
         return torch.nan_to_num(qt_g[day][idx_g], nan=0.0) * fac_g
     jac = ((lambda q, qd, k: router.parallel_res(q, qd, iterations=k, n_newton=NEWTON)) if RES_FILE
            else (lambda q, qd, k: router.substep_parallel(q, qd, iterations=k, n_newton=NEWTON)))
+    jac = torch.compile(jac)   # compiled as in bench_unified_timing.py; uncompiled, a 1 arc-minute year takes hours
     wave = ((lambda q, qd: router.ordered_res(q, qd, n_newton=NEWTON)) if RES_FILE
             else (lambda q, qd: router.substep_ordered(q, qd, n_newton=NEWTON)))
     print('GPU %s' % torch.cuda.get_device_name(0), flush=True)
@@ -201,8 +202,8 @@ elif STAGE == 'gpu':
     torch, router, sideflow, dev, dt, jac, wave = gpu_setup()
     q0 = torch.as_tensor(np.load(OUT + '/q0.npy'), device=dev, dtype=dt)
 
-    # Without a list of counts, walk k upwards until the criterion of section 3.3 is met,
-    # then take one more, which is the curve each panel of Figure 4 shows. The reference
+    # Without a list of counts, walk k upwards until the criterion of section 4.1 is met,
+    # then take one more, which is the curve each panel of Figure 6 shows. The reference
     # year must already be on disk for that; with a list, or without a reference, every
     # count in the list is run and nothing is judged.
     ref_ann = OUT + '/%s_annual_mean.npy' % REF

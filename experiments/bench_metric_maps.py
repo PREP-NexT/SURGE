@@ -17,7 +17,7 @@ from surge import RoutingNetwork, TorchRouter
 from surge.serial_ref import kinematic_serial
 
 NPZ, RUNOFF, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
-KS = tuple(int(x) for x in os.environ.get('METRIC_KS', '1,3,8,20').split(','))
+KS = tuple(int(x) for x in os.environ.get('METRIC_KS', '1,3,7,20').split(','))
 
 net = RoutingNetwork(NPZ)
 N, nsub = net.n_cells, net.noRoutingSteps
@@ -92,7 +92,7 @@ for k in KS:
 
 d = np.load(NPZ)
 rows, cols = np.where(~d['mask2d'])
-RES = 1.0 / 12.0
+RES = 360.0 / d['mask2d'].shape[1]   # the maps span 360 deg of longitude
 np.savez_compressed(OUT,
                     lon=(-180.0 + (cols + 0.5) * RES)[big].astype(np.float32),
                     lat=(90.0 - (rows + 0.5) * RES)[big].astype(np.float32),

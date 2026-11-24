@@ -96,7 +96,7 @@ def steady(net_path, out_path):
 
 
 # ----------------------------------------------------------------------------- timing
-def make_step(config, net, qd_np, res=None, threads=24):
+def make_step(config, net, qd_np, res=None, threads=24, compile_step=True):
     """Returns (step function on the configuration's own arrays, initial-state converter, sync)."""
     if config in ('surge', 'gpu_ordered'):
         dev = 'cuda'
@@ -118,7 +118,7 @@ def make_step(config, net, qd_np, res=None, threads=24):
             fn = (lambda a, b: r.substep_parallel(a, b, iterations=ITERATIONS, n_newton=NEWTON)) if config == 'surge' \
                 else (lambda a, b: r.substep_ordered(a, b, n_newton=NEWTON))
         compiled = False
-        if config == 'surge':
+        if config == 'surge' and compile_step:
             fn = torch.compile(fn); compiled = True
         qd = torch.as_tensor(qd_np, dtype=torch.float32, device=dev)
         return (lambda q: fn(q, qd)), (lambda s: torch.as_tensor(s, dtype=torch.float32, device=dev)), \
@@ -150,8 +150,7 @@ def time_config(config, net, state, res=None, threads=24):
             raise
         print('  compile failed (%s: %s), timing uncompiled' % (type(e).__name__, str(e)[:120]), flush=True)
         torch._dynamo.reset()
-        import torch as _t
-        step, to_state, sync, meta = make_step('gpu_ordered' if False else config, net, lateral_inflow(net), res, threads)
+        step, to_state, sync, meta = make_step(config, net, lateral_inflow(net), res, threads, compile_step=False)
         meta['compiled'] = False; meta['compile_error'] = str(e)[:300]
         q = to_state(state)
         for _ in range(WARMUP):

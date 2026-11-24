@@ -15,8 +15,8 @@ A=${SURGE_REPO:-$PBS_O_WORKDIR}
 cd $A
 module load pytorch/2.6.0-py3-cu11.8
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-export YEAR_OUT=/scratch/users/nus/e0816573/paper1_year_dams
-export YEAR_RES=$A/${SURGE_DATA:-data}/res_grand_05min.npz
+export YEAR_OUT=${YEAR_OUT:-$A/output/year_dams}
+export YEAR_RES=${SURGE_DATA:-$A/data}/res_grand_05min.npz
 B=experiments/bench_year_resolution.py
 mkdir -p $YEAR_OUT
 nvidia-smi --query-gpu=name --format=csv,noheader | head -1

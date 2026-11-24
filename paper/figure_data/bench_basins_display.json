@@ -1,12 +1,12 @@
 {
  "gpu": "NVIDIA A100-SXM4-40GB, whole ASPIRE 2A node",
  "cpu": "AMD EPYC 7713, whole ASPIRE 2A node, one core",
- "protocol": "bench_unified_timing.py (2026-09-14/15): uniform runoff 2 mm/day, steady state of that forcing shared by all configurations, 10 warm-up steps then the mean over 600 routing time steps (one month), Jacobi k=3, 4 Newton steps; SURGE compiled with torch.compile; CPU-parallel on 24 threads; serial = CWatM t5 C++ kernel on one core",
- "note": "SURGE timed at the 30 iterations the 1 arc-minute network needs, against CPU-serial on one core of the same AMD EPYC 7713 node; unified protocol, 2026-09-19. The k = 3 version is kept as bench_basins_display.json.bak_20260919_k3.",
+ "protocol": "bench_unified_timing.py (2026-09-14/15): uniform runoff 2 mm/day, steady state of that forcing shared by all configurations, 10 warm-up steps then the mean over 600 routing time steps (one month), SURGE at k=30, 4 Newton steps; SURGE compiled with torch.compile; CPU-parallel on 24 threads; serial = CWatM t5 C++ kernel on one core",
+ "note": "SURGE timed at the 30 iterations the 1 arc-minute network needs, against CPU-serial on one core of the same AMD EPYC 7713 node; unified protocol, 2026-09-19 (bench_unified_timing.py time-basins).",
  "sweeps": 30,
  "newton": 4,
  "runoff_mmday": 2.0,
- "source": "timing_unified/aspire_excl, timing_unified/aspire_cpu_excl",
+ "source": "SURGE from jobs/pbs_chosen_k_gpu.sh (basins_surge_k30_01min.json), CPU-serial from jobs/pbs_unified_timing_cpu_excl.sh (basins_cpu_serial_01min.json)",
  "rows": [
   {
    "name": "Irrawaddy",
