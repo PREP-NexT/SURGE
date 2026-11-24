@@ -25,7 +25,7 @@ from .kinematic_torch import TorchRouter
 class ResRouter(TorchRouter):
     def set_reservoirs(self, res_cell, cap_m3, rmean, target=0.85, start_frac=0.6):
         """res_cell: int cell indices; cap_m3: capacity [m3]; rmean: mean release [m3/s]."""
-        dev, dt = self.device, self.dtype
+        dev = self.device
         self.res_cell = torch.as_tensor(res_cell, dtype=torch.int64, device=dev)
         # the storage of a reservoir is held in double precision: capacities span 1 to 1e11 m3
         # and a step moves up to 1e9 m3 through them, which single precision cannot resolve
@@ -73,11 +73,6 @@ class ResRouter(TorchRouter):
         Rmin = ((self.S + I64 * self.dt - self.cap) / self.dt).clamp_min(0.0)  # forced spill
         R = torch.minimum(torch.maximum(self._target_release(), Rmin), Rmax)
         return R.to(self.dtype)
-
-    def _Rfull(self, R):
-        Rf = torch.zeros(self.n, dtype=self.dtype, device=self.device)
-        Rf[self.res_cell] = R
-        return Rf
 
     def _update_storage(self, I, R):
         """mass balance, which stays inside [0, cap] because the release was clipped"""

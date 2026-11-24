@@ -3,7 +3,7 @@
 # ASPIRE login node, where it only calls qsub. For each network: spin on a GPU, then the
 # serial year on CPU and the SURGE years on GPUs at the same time, then metrics once both
 # have finished. The 1 arc-minute serial year (~34 h on one EPYC core) is split into two
-# chained jobs that resume from its 30-day checkpoints, and its SURGE years into three jobs.
+# chained jobs that resume from its 10-day checkpoints.
 set -e
 A=${SURGE_REPO:-$(cd "$(dirname "$0")/.." && pwd)}
 J=$A/jobs/pbs_year_resolution.sh

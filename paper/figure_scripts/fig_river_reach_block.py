@@ -7,19 +7,18 @@ time runs to the right. Its upper and lower edges are level with the top and foo
 Each panel title is centred over its panel, and each letter stays at the left of its panel,
 as in Figure 1. Every label is 9 pt.
 
-Writes paper/figures/fig_river_reach.{pdf,png}; FIG2_OUT sends a trial
-render elsewhere."""
-import os, json, sys, subprocess
+Writes paper/figures/fig_river_reach.{pdf,png}."""
+import os, json, subprocess
 import matplotlib.patheffects
 import numpy as np
 import matplotlib; matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
-from matplotlib.patches import Polygon, Circle, Rectangle
+from matplotlib.patches import Polygon, Circle
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, '..', 'figure_data')
-OUT  = os.environ.get('FIG2_OUT') or os.path.join(HERE, '..', 'figures', 'fig_river_reach')
+OUT  = os.path.join(HERE, '..', 'figures', 'fig_river_reach')
 for p in fm.findSystemFonts(fontpaths='/usr/share/fonts/opentype/MyriadPro'):
     try: fm.fontManager.addfont(p)
     except Exception: pass
@@ -32,7 +31,7 @@ plt.rcParams.update({'pdf.fonttype':42, 'ps.fonttype':42, 'svg.fonttype':'none',
 T = json.load(open(os.path.join(DATA, 'river_reach_text.json')))
 SH = json.load(open(os.path.join(DATA, 'river_reach_shapes.json')))
 WPX, HPX = SH['width_px'], SH['height_px']
-PX = T['mm_per_px']; MM = 1/25.4
+MM = 1/25.4
 DROP = 26                      # both panels sit this much below the titles
 PAD_B = 44 + DROP              # room under the block for the label of the section
 fig = plt.figure(figsize=(T['width_mm']*MM, T['height_mm']*MM*(HPX+PAD_B)/HPX))
@@ -172,9 +171,6 @@ for tip, base in ((pa, pa+d*10), (pb, pb-d*10)):
     ax.add_patch(Polygon([tip, base+n*4.2, base-n*4.2], closed=True, facecolor=INK,
                          edgecolor='none', zorder=6))
 
-def by(y):
-    return y
-
 # ---------------- the labels of panel (a) ----------------------------------------------
 PT = 9.0
 def lab(x, y, t, ha='center', va='center', pt=PT, rot=0, halo=False, c='k'):
@@ -211,38 +207,9 @@ from matplotlib.font_manager import FontProperties
 WMM = T['width_mm']; HMM = T['height_mm']*(HPX + PAD_B)/HPX
 MATH_PT, LETTER_PT, TITLE_PT, LETTER_GAP_MM = 9.0, 11.0, 10.5, 1.2
 
-DROP_MM = DROP*PX
-def put(x_mm, base_mm, t, size, colour, ha='left', drop=True, stretch=False, abs_px=None):
-    y_mm = (abs_px*PX if abs_px is not None else
-            by(base_mm/PX)*PX if stretch else base_mm + (DROP_MM if drop else 0.0))
-    fig.text(x_mm/WMM, 1.0 - y_mm/HMM, t, fontsize=size, color=colour, ha=ha,
+def put(x_mm, base_mm, t, size, colour, ha='left'):
+    fig.text(x_mm/WMM, 1.0 - base_mm/HMM, t, fontsize=size, color=colour, ha=ha,
              va='baseline', zorder=10)
-
-# the three labels of a row share one baseline, the highest the export measured for that row
-ROWBASE = {'Qin_tdt': 19.20, 'A_tdt': 19.20, 'Qout_tdt': 19.20,
-           'Qin_t': 38.77, 'A_t': 38.77, 'Qout_t': 38.77}
-
-def corner(lab, t, how):          # the relabelled corner values of equation (3)
-    xs0 = min(k['box_px'][0] for k in lab['tokens'])*PX
-    xs1 = max(k['box_px'][2] for k in lab['tokens'])*PX
-    base = [k for k in lab['tokens'] if k.get('role') == 'base'][0]
-    y = ROWBASE.get(lab['name'], base['baseline_mm'])
-    if how == 'right':   put(xs1, y, t, MATH_PT, base['colour'], ha='right', stretch=True)
-    elif how == 'left':  put(xs0, y, t, MATH_PT, base['colour'], ha='left', stretch=True)
-    else:                put(0.5*(xs0+xs1), y, t, MATH_PT, base['colour'], ha='center', stretch=True)
-
-CORNERS = {'Qin_tdt':  (r'$Q(x,t+\Delta t)$', 'right'),
-           'Qin_t':    (r'$Q(x,t)$', 'right'),
-           'Qout_tdt': (r'$Q(x+\Delta x,t+\Delta t)$', 'left'),
-           'Qout_t':   (r'$Q(x+\Delta x,t)$', 'left'),
-           'A_tdt':    (r'$A(t+\Delta t)$', 'center'),
-           'A_t':      (r'$A(t)$', 'center')}
-X_DIFF = 1462.0                      # right of the time arrow, left of the space arrow
-HDR_BASE = None                      # set once the stencil is placed
-ANCHOR = {'upstream': 'center', 'downstream': 'center', 'row_tdt': 'right', 'row_t': 'right',
-          'd_space': 'center', 'd_time': 'left', 'known': 'left', 'unknown': 'left'}
-PLAIN_B = tuple(ANCHOR)
-HDR_BASE = by(281.0) - 88.0          # the gap over the first row of labels
 
 TITLES = []
 for lab in T['labels']:
@@ -251,31 +218,13 @@ for lab in T['labels']:
         head, words = lab['tokens'][0], lab['tokens'][1:]
         letter = head['token'].strip('()')
         base = float(np.mean([w['baseline_mm'] for w in words]))
-        put(head['x_mm'], base, letter, LETTER_PT, '#000000', drop=False)
+        put(head['x_mm'], base, letter, LETTER_PT, '#000000')
         fig.texts[-1].set_fontweight('bold')
         adv = TextPath((0, 0), letter, size=LETTER_PT,
                        prop=FontProperties(family='Myriad Pro', weight='bold')).get_extents().x1*25.4/72
         title = ' '.join(w['token'] for w in words).replace('$t$ $+$ $\\Delta t$', '$t + \\Delta t$').replace('one grid cell', 'one cell')
-        put(head['x_mm'] + adv + LETTER_GAP_MM, base, title, TITLE_PT, words[0]['colour'],
-            drop=False)
+        put(head['x_mm'] + adv + LETTER_GAP_MM, base, title, TITLE_PT, words[0]['colour'])
         TITLES.append((name, fig.texts[-2], fig.texts[-1]))   # letter, title
-    elif False:
-        corner(lab, *CORNERS[name])
-    elif False:
-        tok = lab['tokens'][0]
-        txt = ' '.join(k['token'] for k in lab['tokens']).replace('$t$ $+$ $\\Delta t$',
-                                                                  '$t + \\Delta t$')
-        xs0 = min(k['box_px'][0] for k in lab['tokens'])*PX
-        xs1 = max(k['box_px'][2] for k in lab['tokens'])*PX
-        how = ANCHOR[name]
-        x = xs1 if how == 'right' else xs0 if how == 'left' else 0.5*(xs0 + xs1)
-        y_px = None
-        if name in ('d_space', 'd_time'):   # the two read as a pair, so they share a left edge
-            x, how = X_DIFF*PX, 'left'
-        if name in ('upstream', 'downstream'):   # the headings sit just over the stencil
-            y_px = HDR_BASE
-        put(x, tok['baseline_mm'], txt, MATH_PT, tok['colour'], ha=how, stretch=True,
-            abs_px=y_px)
 
 # ---------------- panel (b) as a parallelogram, in the attitude of the reach in (a) -------
 # the upstream end is the upper edge and the downstream end the lower edge, both level; the

@@ -19,7 +19,7 @@ paper/
 | Fig. 1, three ways to solve one network | `fig_method_seine.py` | a routing network built by `build/` | `fig_method.pdf/png` |
 | Fig. 2, the implicit difference on one river reach | `fig_river_reach_block.py` | `river_reach_shapes.json`, `river_reach_text.json` | `fig_river_reach.pdf/png` |
 | Fig. 3, the iteration along one rain path | `fig_isometric_terrain.py` | the network of Fig. 1 | `fig_isometric.pdf/png` |
-| Fig. 4, how the iteration closes the gap on six cells | `fig_iteration_gap.py` | nothing (solves the six cells itself, with the solver in `fig_wave_attenuation.py`) | `fig_iteration_gap.pdf/png` |
+| Fig. 4, how the iteration closes the gap on six cells | `fig_iteration_gap.py` | nothing (solves the six cells itself) | `fig_iteration_gap.pdf/png` |
 | Fig. 5, match to the serial solution at 5 arcmin | `fig_kge_convergence.py` | `metric_maps_serialC.npz`, `accuracy.json` | `fig_kge_convergence.pdf/png` |
 | Fig. 6, iterations each network needs | `fig_iterations_by_resolution.py` | `iterations_by_resolution.npz` | `fig_iterations_by_resolution.pdf/png` |
 | Fig. 7, wall-clock and speedup | `fig_timing_bars.py` | `resolution_scaling.json` | `fig_timing_bars.pdf/png` |

@@ -1,9 +1,9 @@
 """Does the fixed point converge as fast with reservoirs as without, in a single time step?
 
-The figure in the paper answers this from one flood step, and the new year-long run answers a
-different question, so this checks the per-step claim with the current code: from a common
-state, one step of SURGE at k iterations against the level-by-level solution of the same
-system, with and without the GRanD dams, on the 5 arc-minute network.
+A supplementary check of one flood step, which corroborates the year-long result of
+Figure 9b: from a common state, one step of SURGE at k iterations against the
+level-by-level solution of the same system, with and without the GRanD dams, on the
+5 arc-minute network.
 """
 import os, sys
 import numpy as np

@@ -10,7 +10,7 @@ import matplotlib, matplotlib.ticker
 import matplotlib; matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from paper_style import setup_paper1_style, panel_label
+from paper_style import setup_paper1_style
 setup_paper1_style()
 # Fig 1 size tier: letter 11, title 10.5, labels and annotations 9, tick numbers 8
 FS_LETTER, FS_TITLE, FS_ANN = 11.0, 10.5, 9.0
@@ -28,11 +28,10 @@ CONF = [('serialC', 'CPU-serial (1 core)', '#3F3F3F'),
         ('cpu_parallel', 'CPU-parallel (24 cores)', '#C4C4C4'),
         ('gpu_ordered', 'GPU-ordered (1 GPU)', '#858585'),
         ('surge', 'SURGE (1 GPU)', '#0072B2')]
-resname = {"30'": "30'", "15'": "15'", "5'": "5'", "3'": "3'", "1'": "1'"}
 
 fig, (ax, ax2) = plt.subplots(1, 2, figsize=(PW, 2.85 * PW / 5.3), layout='constrained',
                               gridspec_kw=dict(width_ratios=(1.9, 1.0)))
-SPD = 20          # routing time steps in a simulated day (Table A1)
+SPD = 20          # routing time steps in a simulated day (Table 3)
 n = len(rows); w = 0.2
 x = np.arange(n)
 for j, (key, label, col) in enumerate(CONF):

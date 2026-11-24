@@ -23,7 +23,7 @@ DATA = os.path.join(_HERE, '..', 'figure_data')
 
 order = ['5\'', '3\'', '1\'']
 C_WF = '#858585';   # the grey of GPU-ordered in Figure 7
-C_JE = '#E69F00'; C_JF = '#0072B2'
+C_JF = '#0072B2'
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(PW, 2.42 * PW / 5.3))
 # (a) what the dams actually cost: percentage added, per scheme and resolution

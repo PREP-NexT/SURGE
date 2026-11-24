@@ -24,7 +24,7 @@ the recursion as a convergent fixed-point iteration: the whole network
 is updated at once, and a fixed, small number of iterations reproduces the
 serial solution.
 
-- The per-iteration contraction is `g = Cr / (1 + Cr)`, set by the local
+- The per-iteration gain is `g = Cr / (1 + Cr)`, set by the local
   Courant number `Cr`, so the iterations a network needs follow that number,
   two on the global 30 arc-minute network and thirty on the 1 arc-minute one.
 - One NVIDIA A100 routes the global networks **137 to 505 times** faster than
@@ -85,7 +85,8 @@ on one NVIDIA A100-SXM4-40GB. The card has to hold the network and the fields, s
 the 30 arc-minute network fits in well under a gigabyte while the 55.8-million-cell
 1 arc-minute network wants a 40 GB card. Reproducing the serial baseline also needs
 the CWatM kernel, which `surge/serial_ref.py` finds through `GPU_KWR_T5_SO`;
-without it the ordered scheme is an equivalent machine-precision reference.
+without it the ordered scheme is a reference that agrees with it to
+single-precision rounding on the cells the paper evaluates.
 
 ## Installation
 
@@ -211,8 +212,9 @@ The builders construct self-contained `.npz` network files (topology, levels,
 edge lists, synthetic hydraulic geometry) from public flow-direction maps:
 
 ```bash
-# 30', 15' and 5' from the 5 arc-minute local drain direction map of CWatM
-# (Eilander et al.), written as routing_static_<tag>.npz into the folder given
+# 30', 15' and 5' from the 5 arc-minute flow-direction map of CWatM, from which the
+# 30' and 15' networks are upscaled with pyflwdir (Eilander et al.), written as
+# routing_static_<tag>.npz into the folder given
 python build/build_multiresolution.py ldd_5min.nc networks/
 # 3' and 1' from CaMa-Flood; the folder holds params.txt and nextxy.bin
 python build/build_from_cama.py glb_03min/ networks/routing_static_03min.npz

@@ -1,25 +1,19 @@
-"""Figure 8: map in the Robinson projection with each basin named (no numbers); panel b names
-only a few basins. Panel titles are centred over their panels.
-
-Figure 8 with every basin named on the map by a leader line.
-
-Same measurements and colours as plot_basins_map.py, which it leaves untouched. The
-numbered discs and the separate list of names are gone: each basin carries a small black
-dot at its interior point, the point furthest from its edge, and a curved leader runs
-from that dot to a label giving its number and name. The number stays because panel b
-identifies its points by it.
+"""Figure 8: the 26 large river basins routed on their own. (a) Map in the Robinson projection,
+each basin coloured by its speedup and named by a leader from a dot at its interior point,
+the point furthest from its edge. (b) Speedup against the river cells of the routed domain,
+with a few basins named. (c) Wall-clock of SURGE per routing time step against the same cells.
+Panel titles are centred over their panels.
 
 Labels are placed by search, not by hand, on a fixed set of rows with leader ends on a 5
 degree grid, so they line up in stacks. A label is refused if it leaves the map, overlaps
 a label or a dot already placed, or if its leader crosses another label or leader. Among
 the rest the cheapest is taken, the cost rising with leader length and with how much of
-the label or leader lies over a painted basin or over land. The most crowded basins are placed first, while the most
-room is left around them.
+the label or leader lies over a painted basin. The most crowded basins are placed first,
+while the most room is left around them.
 
-The figure is built at the 166 mm text width in the paper1 style, so its 8 pt text prints
-at 8 pt, and panel letters follow the paper's figure style.
+The figure is built at the 166 mm text width, so its text prints at the size set here.
 
-    python plot_basins_map_leaders.py [bench.json basin_map.npz coarse.npz out_stem]
+    python fig_basin_speedup.py [bench.json basin_map.npz coarse.npz out_stem]
 """
 import json
 
@@ -51,7 +45,7 @@ DEFAULTS = [os.path.join(DATA, 'bench_basins_display.json'),
             os.path.join(HERE, '..', 'figures', 'fig_basin_speedup')]
 
 CMAP = plt.get_cmap('RdYlBu_r')        # blue for the slow end, red for the fast end
-LAND, OUTLINE, LEAD = '#E6E8EA', '#1A1A1A', '#3A3F45'
+LAND, OUTLINE = '#E6E8EA', '#1A1A1A'
 FS = 9.0
 # names as printed. The data keep the names of Nijssen et al. (2001); where that name is not
 # the one English-language readers know, the label uses the common one
@@ -157,7 +151,6 @@ def main():
     _c = np.clip(((_lon[_ok] + 180.0) / deg).astype(int), 0, grid.shape[1] - 1)
     grid_p = np.full(_X.shape, np.nan); grid_p[_ok] = grid[_r, _c]
     PEXT = (XLIM[0], XLIM[0] + _xs.size * PRES, YLIM[1] - _ys.size * PRES, YLIM[1])
-    globe_in = _ok
     painted_any = np.isfinite(grid_p)
     vals = np.array([r['speedup'] for r in basins])
     norm = matplotlib.colors.Normalize(vals.min(), vals.max())
@@ -216,25 +209,6 @@ def main():
         if own is not None:
             sub = sub & (grid_p[r0:r1, c0:c1] != own)
         return float(sub.sum()) / area
-
-    def land_fraction(x0, y0, x1, y1):
-        r0 = int(np.clip((PEXT[3] - y1) / PRES, 0, land.shape[0]))
-        r1 = int(np.clip((PEXT[3] - y0) / PRES, 0, land.shape[0]))
-        c0 = int(np.clip((x0 - PEXT[0]) / PRES, 0, land.shape[1]))
-        c1 = int(np.clip((x1 - PEXT[0]) / PRES, 0, land.shape[1]))
-        if r1 <= r0 or c1 <= c0:
-            return 0.0
-        return float(land[r0:r1, c0:c1].mean())
-
-    def seg_points(p, q, n=40):
-        t = np.linspace(0.08, 0.92, n)[:, None]
-        return p[None, :] + t * (q - p)[None, :]
-
-    def seg_cross(p1, p2, q1, q2):
-        def orient(a, b, c):
-            return np.sign((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]))
-        return (orient(p1, p2, q1) * orient(p1, p2, q2) < 0 and
-                orient(q1, q2, p1) * orient(q1, q2, p2) < 0)
 
     # the colour key sits in the open Indian Ocean below Africa; its space is reserved first, and the
     # bar is made exactly as wide as the label that sits above it
@@ -421,7 +395,7 @@ def main():
                 return
             if painted_fraction(*box) > 0.02:
                 return
-            # a label over another basin hides it and one over land crowds the continents;
+            # a label over another basin hides it;
             # a leader over another basin reads as pointing at it
             lp = np.mean([painted_fraction(x - .1, y - .1, x + .1, y + .1, own=own)
                           for x, y in pts[2:]])
@@ -740,7 +714,6 @@ def main():
         ax3.annotate('Whole globe', (glob['cells'], glob['surge_ms']), textcoords='offset points',
                      xytext=(0, 9), ha='center', va='bottom', fontsize=FS, color='#1A1A1A', zorder=5)
     ax3.set_ylim(0.25, 600)
-    _x = 2.6e6
     # written along the sloping line, in the empty stretch between the largest basin and the globe
     _xa, _xb = 2.0e6, 2.0e7
     _pa, _pb = ax3.transData.transform([(_xa, per * _xa), (_xb, per * _xb)])

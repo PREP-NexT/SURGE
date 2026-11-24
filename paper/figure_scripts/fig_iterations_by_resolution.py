@@ -5,7 +5,7 @@ iteration axis, so the same k can be compared down the column, and each row pick
 own crossing, the first k at which 95 per cent of its cells reach THRESH, drawing that
 iteration count at full strength and the others faded.
 """
-import os, sys, re, json
+import os, sys, re
 import numpy as np
 import matplotlib; matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -16,12 +16,12 @@ try:
     from paper_style import setup_paper1_style, panel_label; setup_paper1_style()
 except Exception as e:
     print('paper_style unavailable:', e)
-# maths stays in STIX from paper_style, as in every other paper1 figure (2026-11-03)
+# maths stays in STIX from paper_style, as in every other figure
 # paper_style asks for a constrained layout, and the PDF writer reinstates it at save time even
 # when the figure was built without one, which threw away the margins set here and moved every
 # axes in the PDF alone. Turning it off in the parameters keeps the PDF and the PNG identical.
 matplotlib.rcParams['figure.constrained_layout.use'] = False
-# 2026-11-23 font pass: the tiers of Figure 1 (fig_method_seine.py), letters 11, row titles
+# the text tiers of Figure 1 (fig_method_seine.py): letters 11, row titles
 # 10.5, annotations and labels 9, tick numbers 8; set here, paper_style is shared
 FS_LETTER, FS_TITLE, FS_ANN, FS_TICK = 11.0, 10.5, 9.0, 8.0
 matplotlib.rcParams.update({'font.size': FS_ANN, 'axes.labelsize': FS_ANN,
@@ -183,13 +183,11 @@ for row, (ax, (tag, lab, lv)) in enumerate(zip(np.atleast_1d(axs), avail)):
                         fontsize=FS_ANN, color=colour,
                         arrowprops=dict(arrowstyle='-|>', lw=0.5, color=colour, shrinkA=1, shrinkB=2,
                                         mutation_scale=6, facecolor=colour, edgecolor=colour))
-        label('spread across cells', med95 + 1.4, '#1f6f8b', j + 0.34)   # 1.6 at 8 pt; lowered so the 9 pt text clears the threshold line
+        label('spread across cells', med95 + 1.4, '#1f6f8b', j + 0.34)   # placed so the text clears the threshold line
         label('median cell', med95, '0.35', j + 0.06)
         label('5th to 95th percentile', lo95 + 0.3, '0.35', j)
     ax.grid(False, which='both')
     print('%-13s crossing k = %s' % (tag, cross))
-# the Courant relation the networks follow is reported in the text; the inset that used
-# to carry it was dropped when this figure moved behind the map figure
 print('crossings: %s' % {t: v[1] for t, v in CHOSEN.items()})
 
 axs[-1].set_xticks(range(len(KS_ALL)))

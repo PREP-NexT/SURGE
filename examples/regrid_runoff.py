@@ -3,8 +3,8 @@ which is what the routing scripts read.
 
     python examples/regrid_runoff.py routing_05min.npz qtot_2010.npz runoff_05min.npy
 
-The network npz carries the grid it was built on, the runoff npz holds qtot in
-[day, lat, lon] with its coordinates, and the output is [cell, day] in kg m-2 s-1,
+The network npz carries the grid it was built on, the runoff npz holds qtot as
+[day, lat, lon] on the global 0.5-degree grid, north to south and from 180 W, and the output is [cell, day] in kg m-2 s-1,
 the unit that q = R * cellArea / (1000 * chanLength) expects."""
 import sys, numpy as np, time
 t0=time.time()
@@ -12,7 +12,7 @@ NET, Q, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
 d=np.load(NET); mask=d['mask2d']; rows,cols=np.where(~mask)
 RES=360.0/mask.shape[1]   # the maps span 360 deg of longitude; CaMa 3' and 1' stop at 60 S
 clat=90.0-(rows+0.5)*RES; clon=-180.0+(cols+0.5)*RES
-q=np.load(Q); qt=q['qtot']; qlat=q['lat']; qlon=q['lon']
+q=np.load(Q); qt=q['qtot']
 print('%d routing cells, qtot %s' % (rows.size, qt.shape))
 i=np.clip(((90.0-clat)/0.5).astype(int),0,qt.shape[1]-1)
 j=np.clip(((clon+180.0)/0.5).astype(int),0,qt.shape[2]-1)

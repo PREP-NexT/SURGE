@@ -7,9 +7,9 @@ key and note. The network, reaches and basin outline come from fig_method_seine.
 The relief is built from the network: the river bed rises with the flow distance to the outlet,
 and the land rises away from the nearest river towards the divide, so every reach lies in a valley.
 Run:  SURGE_DATA=<folder with routing_static_05min.npz> python fig_isometric_terrain.py
-Output: paper/figures/<FIG_OUT or fig_isometric>.{png,pdf}; copied to SURGE_FIGURE_COPY when set
+Output: paper/figures/fig_isometric.{png,pdf}
 """
-import os, sys, shutil
+import os
 import numpy as np, matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -53,7 +53,7 @@ rp = np.vstack(rp); fd = np.clip(np.concatenate(rz), 0, None)
 tree = cKDTree(rp)
 
 Wd = bX.max() - bX.min()
-HILL_A, HILL_L = float(os.environ.get('FIG3_HA', '0.10')), float(os.environ.get('FIG3_HL', '0.12'))
+HILL_A, HILL_L = 0.10, 0.12
 FDMAX = fd.max()
 def zfun(x, y):
     """Elevation: river bed rising with flow distance (concave profile), land rising away from the river."""
@@ -64,8 +64,8 @@ def zfun(x, y):
     return (bed + hill).reshape(np.shape(x))
 
 # ---- oblique view: seen from the outlet side, tilted
-SQ, EZ = float(os.environ.get('FIG3_SQ', '0.55')), float(os.environ.get('FIG3_EZ', '0.85'))
-AZ = np.deg2rad(float(os.environ.get('FIG3_AZ', '45')))       # viewer at the lower left, looking up-right at AZ from the x axis
+SQ, EZ = 0.55, 0.85
+AZ = np.deg2rad(45.0)       # viewer at the lower left, looking up-right at AZ from the x axis
 DV = np.array([np.cos(AZ), np.sin(AZ)])                       # view direction on the map
 RV = np.array([np.sin(AZ), -np.cos(AZ)])                      # screen right on the map
 def P(x, y, z):
@@ -162,7 +162,7 @@ def draw(ax, j):
     e = q[0]                                                   # upstream end of the reach
     d = q[min(4, len(q) - 1)] - q[0]; d /= np.hypot(*d)       # flow direction there, on screen
     nrm = np.array([-d[1], d[0]])                              # across the flow, on screen
-    NARR = int(os.environ.get('FIG3_NARROW', '3'))
+    NARR = 3
     for k in range(NARR):                                      # parallel curved arrows into the upstream end
         off = (k - (NARR - 1) / 2) * 0.05 * Wd * nrm
         ek = e + off
@@ -178,13 +178,8 @@ def draw(ax, j):
     ax.set_aspect('equal'); ax.axis('off')
 
 PW = 472.31595 / 72.27
-LAYOUT = os.environ.get('FIG3_LAYOUT', 'row')                # 'row' (1 x 4) or 'grid' (2 x 2)
-if LAYOUT == 'row':
-    fig, axs = plt.subplots(1, 4, figsize=(PW, 46 / 25.4), layout='constrained')
-    fig.get_layout_engine().set(rect=(0, 0, 1, 0.93))          # room above the panels for the titles
-else:
-    fig, axs = plt.subplots(2, 2, figsize=(PW, 112 / 25.4), layout='constrained')
-axs = axs.ravel()
+fig, axs = plt.subplots(1, 4, figsize=(PW, 46 / 25.4), layout='constrained')
+fig.get_layout_engine().set(rect=(0, 0, 1, 0.93))              # room above the panels for the titles
 TITLES = ['Before iteration 1', 'After iteration 1', 'After iteration 2', 'After iteration 3']
 allp = np.vstack([top_edge, P(dense[:, 0], dense[:, 1], np.full(len(dense), ZB))])
 for j, ax in enumerate(axs):
@@ -206,11 +201,6 @@ fig.legend(handles=[Line2D([], [], color=BLUE, lw=3.0, solid_capstyle='projectin
            columnspacing=0.9)
 
 FIG = os.path.join(HERE, '..', 'figures')
-OUT = os.environ.get('FIG_OUT', 'fig_isometric')
 for ext in ('png', 'pdf'):
-    fig.savefig(os.path.join(FIG, OUT + '.' + ext), dpi=600)
-COPY = os.environ.get('SURGE_FIGURE_COPY')
-if COPY:
-    for ext in ('png', 'pdf'):
-        shutil.copy(os.path.join(FIG, OUT + '.' + ext), os.path.join(COPY, OUT + '.' + ext))
-print('rain path (Figure 1b numbers):', [serial[r] for r in path], '| quads', len(quads), '| saved', OUT)
+    fig.savefig(os.path.join(FIG, 'fig_isometric.' + ext), dpi=600)
+print('rain path (Figure 1b numbers):', [serial[r] for r in path], '| quads', len(quads), '| saved fig_isometric')

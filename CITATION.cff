@@ -20,7 +20,6 @@ keywords:
   - kinematic wave
   - GPU
   - global hydrological model
-  - differentiable modelling
 preferred-citation:
   type: article
   title: "SURGE: parallel kinematic wave river routing on GPUs"

@@ -1,4 +1,4 @@
-"""Per-cell KGE, mass bias, NSE and rRMSE at k = 1, 3, 8, 20, against the CWatM
+"""Per-cell KGE, mass bias, NSE and rRMSE at k = 1, 3, 7, 20, against the CWatM
 serial-C kernel. Area-proxy geometry, 2010 daily runoff, one-year k=8 spin-up shared
 by both sides, fp32 on the GPU. The serial reference year is the expensive part; every
 metric for every k comes out of the one run.
@@ -98,7 +98,7 @@ np.savez_compressed(OUT,
                     lat=(90.0 - (rows + 0.5) * RES)[big].astype(np.float32),
                     ann=ann[big].astype(np.float32),
                     level=net.level[big].astype(np.int32),
-                    note='per-cell KGE / bias ratio / NSE / rRMSE at k=1,3,8,20 against the '
+                    note='per-cell KGE / bias ratio / NSE / rRMSE at k=1,3,7,20 against the '
                          'CWatM serial-C kernel; area-proxy geometry; 2010 daily runoff; fp32 GPU',
                     **out)
 print('wrote %s (%d cells)' % (OUT, int(big.sum())), flush=True)

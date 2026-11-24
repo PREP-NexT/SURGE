@@ -1,12 +1,11 @@
 """Figure 4 of the manuscript: how the parallel iteration closes the gap on a chain of cells. Six cells at Courant number 1, no lateral inflow, the
-inflow of cell 1 steps from Q_init to 2 Q_init in one time step (Equation 7, same solver as
-fig_wave_attenuation.py). (a) serial solution, (b) serial minus the fully parallel scheme after
+inflow of cell 1 steps from Q_init to 2 Q_init in one time step (Equation 3). (a) serial solution, (b) serial minus the fully parallel scheme after
 iterations 1-3, (c) the largest gap per iteration with the reference g_c^j, g_c = 1/2. Panel c stops at
 iteration 5: after iteration 6 all six cells equal the serial solution and the gap is zero.
-Run:  python fig_iteration_gap.py   (FIG_OUT=<name> writes elsewhere)
-Output: paper/figures/<FIG_OUT>.{png,pdf}; copied to SURGE_FIGURE_COPY when set
+Run:  python fig_iteration_gap.py
+Output: paper/figures/fig_iteration_gap.{png,pdf}
 """
-import os, sys, shutil
+import os, sys
 import numpy as np, matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -17,8 +16,30 @@ setup_paper1_style()
 FS_LETTER, FS_TITLE, FS_ANN = 11.0, 10.5, 9.0
 plt.rcParams.update({'font.size': FS_ANN, 'axes.labelsize': FS_ANN, 'axes.titlesize': FS_TITLE,
                      'legend.fontsize': FS_ANN, 'xtick.labelsize': 8.0, 'ytick.labelsize': 8.0})
-src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fig_wave_attenuation.py')).read()
-exec(src[src.index('def e_numbers'):src.index('change, left = e_numbers()')])   # the same solver
+
+
+def e_numbers(N=8, DT=4320.0, BETA=0.6, n=0.03, S0=1e-3, P=30.0, Q0=100.0, QIN=200.0, K=3):
+    """Equation 3 on a chain of N cells, Courant number 1 at the base flow Q0; the inflow at the
+    upstream end rises from Q0 to QIN in this time step. Returns the serial change per unit rise
+    and, for iterations 1..K of the fully parallel scheme, the serial solution minus it."""
+    ALPHA = (n * P ** (2 / 3) / np.sqrt(S0)) ** BETA
+    DX = DT / (ALPHA * BETA * Q0 ** (BETA - 1))     # Cr = 1 at Q0
+    def solve(qin, qold):
+        rhs = DT / DX * qin + ALPHA * qold ** BETA
+        Q = np.maximum(qold, 1e-6)
+        for _ in range(30):
+            f = DT / DX * Q + ALPHA * Q ** BETA - rhs
+            Q = np.maximum(Q - f / (DT / DX + ALPHA * BETA * Q ** (BETA - 1)), 1e-6)
+        return Q
+    qold = np.full(N, Q0); serial = np.empty(N); up = QIN
+    for c in range(N):
+        serial[c] = solve(up, qold[c]); up = serial[c]
+    q = qold.copy(); left = []
+    for _ in range(K):
+        q = solve(np.r_[QIN, q[:-1]], qold); left.append((serial - q) / (QIN - Q0))
+    assert min(l.min() for l in left) > -1e-9, 'fully parallel scheme above the serial solution'
+    return (serial - qold) / (QIN - Q0), left
+
 
 N = 6
 change, left = e_numbers(N=N, K=N)          # left[j-1] = serial minus iteration j, in Q_init
@@ -99,11 +120,6 @@ axc.spines[['top', 'right']].set_visible(False)
 panel_label(axc, 'c').set_fontsize(FS_LETTER)
 
 FIG = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'figures')
-OUT = os.environ.get('FIG_OUT', 'fig_iteration_gap')
 for ext in ('png', 'pdf'):
-    fig.savefig(os.path.join(FIG, OUT + '.' + ext), dpi=600)
-COPY = os.environ.get('SURGE_FIGURE_COPY')
-if COPY:
-    for ext in ('png', 'pdf'):
-        shutil.copy(os.path.join(FIG, OUT + '.' + ext), os.path.join(COPY, OUT + '.' + ext))
-print('serial', np.round(serial, 2), '| largest gap', np.round(gmax, 3), '| saved', OUT)
+    fig.savefig(os.path.join(FIG, 'fig_iteration_gap.' + ext), dpi=600)
+print('serial', np.round(serial, 2), '| largest gap', np.round(gmax, 3), '| saved fig_iteration_gap')

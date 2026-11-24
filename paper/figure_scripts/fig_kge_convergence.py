@@ -3,11 +3,10 @@ of parallel iterations, the river network it is measured on, and one hydrograph.
 
 (a-d) KGE after one, three, seven and twenty iterations, on one shared scale so the panels
 compare; (e) annual-mean discharge of the serial solution, the Amazon mouth circled;
-(f) daily discharge at the Amazon mouth for CPU-serial and SURGE with one to three
-iterations, with the section 3.3 metrics of the three-iteration series. Only the evaluation
+(f) daily discharge at the Amazon mouth for CPU-serial and SURGE with one, three and seven
+iterations, with the section 3.3 metrics of the seven-iteration series. Only the evaluation
 set is mapped, the 106,661 cells whose annual-mean discharge exceeds 100 m3/s, so the
-summary in each map is over those cells and not over the whole network. Panel f was
-Figure 5 before 2026-09-15.
+summary in each map is over those cells and not over the whole network.
 
 Layout follows PREP-NexT/DOMINO-SEE (plot_global_degree_tele.py): ultraplot places the
 panel grid and the colour bars; panel f alone is placed by hand after the first draw, its
@@ -29,9 +28,8 @@ pplt.rc['font.sans-serif'] = 'Myriad Pro'
 # and the letter written into the title string instead. Those figures are drawn 5.3 in
 # wide and scaled to the 6.54 in text width, so their 8.4 pt titles print at 10.4 pt;
 # this figure is already 6.54 in, so it needs that size nominally to match on the page
-# sizes from the paper's figure style: 9 pt titles, 8 pt for everything else, and
-# equations in STIX as in Figure 2
-# 2026-11-23 font pass: the tiers of Figure 1 (fig_method_seine.py), letters 11, titles 10.5,
+# equations in STIX as in Figure 2, and the text tiers of Figure 1 (fig_method_seine.py):
+# letters 11, titles 10.5,
 # annotations, labels and legend 9, tick numbers 8
 FS_LETTER, FS_TITLE, FS_ANN, FS_TICK = 11.0, 10.5, 9.0, 8.0
 pplt.rc['title.size'] = FS_TITLE
@@ -167,7 +165,7 @@ axz.plot(days, _o / 1e3, color='k', lw=1.0)
 for kk, c in [(1, '#D55E00'), (3, '#E69F00'), (7, '#0072B2')]:
     axz.plot(days, np.asarray(H[str(kk)], float) / 1e3, color=c, lw=0.8)
 axz.set_xlim(*_zx); axz.set_ylim(*_zy)
-# 90 would print over the main curves now that the inset starts at day 185
+# no tick at 90, which would print over the main curves
 axz.set_xticks([100, 110, 120]); axz.set_yticks([250, 300])
 axz.tick_params(labelsize=FS_TICK, pad=1.5, length=2.0, top=False, right=False)
 # the numbers the text quotes for the annual peak: one iteration arrives nine days late

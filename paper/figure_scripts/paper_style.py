@@ -1,15 +1,9 @@
-"""Paper-figure matplotlib style for the GPU-hydrology papers.
-
-Mirrors the Hydropower_production_reanalysis figure style
-(figures/style.py + _validation_style.py) so the three papers here match the
-reanalysis manuscript: Myriad Pro typography, 7-10 pt sizes, constrained
-layout, thin spines with top/right removed, TrueType embedding, high-dpi raster.
+"""Matplotlib style shared by the figure scripts: Myriad Pro typography, constrained
+layout, thin spines with top/right removed, TrueType embedding.
 
 Usage:
-    from paper_style import setup_paper_style, OBS_COLOR, SIM_COLOR, SEQ_CMAP, DIV_CMAP
-    setup_paper_style(base_size=8)
-    fig, axes = plt.subplots(..., constrained_layout=True)  # or rely on rc default
-    fig.savefig(out, dpi=300)   # NO bbox_inches="tight"
+    from paper_style import setup_paper1_style
+    setup_paper1_style()
 """
 from __future__ import annotations
 from pathlib import Path
@@ -20,19 +14,9 @@ import matplotlib.pyplot as plt
 
 _MYRIAD_DIR = Path("/usr/share/fonts/opentype/MyriadPro")
 
-# --- shared palette (matches reanalysis _validation_style.py) ---
-OBS_COLOR = "#0E3B5C"     # observed / reference / "truth": dark navy
-SIM_COLOR = "#D32F2F"     # simulated / model: publication red
-ACCENT    = "#1A7DB6"     # cool accent (blues)
-ACCENT2   = "#E8A33D"     # warm accent (amber)
-GOOD      = "#2E7D5B"     # green
-MUTED     = "#8895A3"     # grey
-PANEL_BG  = "#E8EEF5"     # light panel backdrop for multi-panel figures
-
-# perceptually-uniform colormaps used throughout (sequential + diverging).
+# a perceptually uniform sequential colormap.
 # Never a rainbow map.
 SEQ_CMAP = "viridis"
-DIV_CMAP = "RdBu_r"
 
 # Colour-blind-safe categorical order (Okabe & Ito). The first three entries are
 # what most panels use, and vermillion/bluish-green stay separable under
@@ -44,19 +28,6 @@ CB_ORANGE = "#E69F00"
 CB_PURPLE = "#CC79A7"
 CB_GREY   = "#8895A3"
 CATEGORICAL = [CB_BLUE, CB_VERM, CB_GREEN, CB_ORANGE, CB_PURPLE, CB_GREY]
-
-CM2INCH = 1.0 / 2.54
-WIDTH_SINGLE_IN = 8.5 * CM2INCH
-WIDTH_DOUBLE_IN = 17.4 * CM2INCH
-
-OBS_KW = dict(color=OBS_COLOR, linestyle="none", marker="o", markersize=3.0,
-              markerfacecolor=OBS_COLOR, markeredgecolor="white",
-              markeredgewidth=0.4, zorder=3, label="Observed")
-SIM_KW = dict(color=SIM_COLOR, linewidth=1.4, linestyle="-", alpha=0.95,
-              zorder=2, label="Simulated")
-METRIC_BOX = dict(fontsize=7.5, va="top",
-                  bbox=dict(facecolor="white", edgecolor="none", alpha=0.78,
-                            boxstyle="round,pad=0.3"))
 
 
 def _register_myriad():
@@ -74,8 +45,7 @@ def setup_paper_style(base_size: float = 8.0) -> None:
     _register_myriad()
     plt.rcdefaults()
     mpl.rcParams.update({
-        # paper1 figures: sans-serif lettering (Myriad Pro) for accessibility,
-        # per the figure guidance adopted 2026-08-26. Mathtext uses a sans face
+        # sans-serif lettering (Myriad Pro) for accessibility. Mathtext uses a sans face
         # so symbols in axis labels match the surrounding text.
         "font.family":      "sans-serif",
         "font.sans-serif":  ["Myriad Pro", "Lato", "DejaVu Sans"],
@@ -137,27 +107,12 @@ def setup_paper_style(base_size: float = 8.0) -> None:
     })
 
 
-def panel_tag(ax, tag, dx=-0.02, dy=1.04):
-    """Bold lower-case panel tag (a), (b), ... at the top-left, journal style."""
-    ax.text(dx, dy, tag, transform=ax.transAxes, fontsize=9, fontweight="bold",
-            va="bottom", ha="right")
-
-
-def finish(fig, out_paths, dpi=300):
-    """Save a constrained-layout figure to one or more paths (no bbox=tight)."""
-    if isinstance(out_paths, (str, Path)):
-        out_paths = [out_paths]
-    for p in out_paths:
-        fig.savefig(p, dpi=dpi)
-
-
-# ---- paper1 --------------------------------------------------------------------------
-# Paper1 figures are built at the 166 mm text width, so a size set here is the size that
+# ---- the paper figures -----------------------------------------------------------------
+# The figures are built at the 166 mm text width, so a size set here is the size that
 # prints. Words stay in Myriad Pro and equations are set in STIX, as in Figure 2, so a
 # symbol in a figure looks the way it does in the text. Sizes follow
 # the paper's figure style: 8 pt for ticks, axis labels and legends, 9 pt for
 # titles inside a figure, and nothing smaller than 8 pt.
-PRINT_WIDTH_IN = 166.0 / 25.4
 
 
 def setup_paper1_style() -> None:
@@ -195,7 +150,7 @@ def myriad_ticks(fig) -> None:
     powers of ten that mathtext builds, are lettering and use the text face. The tick
     labels are switched to the 'custom' mathtext set, whose faces (mathtext.rm and
     mathtext.it = 'sans') resolve to Myriad Pro. Call it just before saving: ticks made
-    later copy the setting from the first tick of their axis. (2026-11-03)"""
+    later copy the setting from the first tick of their axis."""
     mpl.rcParams.update({"mathtext.rm": "sans", "mathtext.it": "sans:italic",
                          "mathtext.bf": "sans:bold", "mathtext.sf": "sans"})
     import re

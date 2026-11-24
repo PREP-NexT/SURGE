@@ -1,4 +1,4 @@
-"""Optional bit-level oracle: ctypes wrapper around CWatM's serial kinematic-wave
+"""Optional reference: ctypes wrapper around CWatM's serial kinematic-wave
 kernel (the compiled `t5` routine), used only to validate the GPU schemes against
 the exact serial solution.
 
@@ -9,8 +9,8 @@ the GPU_KWR_T5_SO environment variable, e.g.
     export GPU_KWR_T5_SO=/path/to/cwatm/hydrological_modules/routing_reservoirs/t5_linux.so
 
 Nothing else in surge depends on this module; the GPU ordered scheme
-(TorchRouter.substep_ordered) provides an equivalent machine-precision reference
-without any external library.
+(TorchRouter.substep_ordered) provides a reference that agrees with it to
+single-precision rounding on the cells the paper evaluates, without any external library.
 """
 import ctypes
 import os

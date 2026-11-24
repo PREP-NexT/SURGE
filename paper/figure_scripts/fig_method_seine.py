@@ -1,10 +1,10 @@
 """Figure 1: a river network (derived from the Seine at 5 arcmin, simplified)
 and the three schemes at reach level.
 Run:  SURGE_DATA=<folder with routing_static_05min.npz> python fig_method_seine.py
-Output: paper/figures/fig_method.{png,pdf}; copied to SURGE_FIGURE_COPY when set
+Output: paper/figures/fig_method.{png,pdf}
 
-调标签位置只需改 LABEL_ADJUST 字典 (搜索这个名字), 按 (b) 图编号写调整,
-写法见字典上方注释; 改完重跑本脚本即可预览。
+The reach numbers of panel b are placed by hand through LABEL_ADJUST; the comment above
+it gives the format.
 """
 
 import numpy as np, matplotlib
@@ -12,9 +12,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-# paper1 style: Myriad Pro words, STIX equations, and sizes from
-# the paper's figure style (8 pt text, 9 pt titles, 10 pt bold panel letters)
-from paper_style import setup_paper1_style, panel_label
+# the shared style: Myriad Pro words and STIX equations
+from paper_style import setup_paper1_style
 setup_paper1_style()
 # built at the 166 mm text width, so the sizes set here are the sizes that print
 PW = 166.0 / 25.4
@@ -120,13 +119,12 @@ def dfs(i):
 for i in rootr: dfs(i)
 serial = {i:k+1 for k,i in enumerate(order)}
 
-# ==================== (b) 图河网编号位置手动调整 ====================
-# key = (b) 图的串行编号 1..17。三种写法:
-#   不写                        自动放置
-#   ('beside', 参照编号, dx, dy)  钉在参照编号标签旁边: 参照标签位置 + (dx, dy)
-#   ('nudge', dx, dy)           先自动放置, 再平移 (dx, dy)
-# dx>0 右移, dy>0 上移; 单位为图内坐标, 一个标签宽约 0.34。
-# (c)(d) 面板中同一条河段的标签自动继承相同调整。改完直接重跑本脚本预览。
+# ---- hand placement of the reach numbers of panel b
+# key = the serial number of the reach in b, 1..17. A reach not listed is placed automatically;
+#   ('beside', ref, dx, dy)  pins the label at the label of reach ref plus (dx, dy)
+#   ('nudge', dx, dy)        places it automatically, then shifts it by (dx, dy)
+# dx > 0 moves right and dy > 0 up, in data units (a label is about 0.34 wide).
+# The labels of the same reach in c and d take the same adjustment.
 LABEL_ADJUST = {
     8:  ('beside', 6, 0.22, 0.0),
     7:  ('beside', 4, 0.30, 0.0),
@@ -139,11 +137,11 @@ LABEL_ADJUST = {
     16: ('nudge', 0.05, -0.05),
     17: ('nudge', 0.05, 0.0),
 }
-# (a)图方向箭头位置, 相对河口: x = 河口x + dx; 箭头从 河口y+y1 画到 河口y+y0 (向下);
-# 文字在箭头左侧 text_dx 处
+# the flow arrow of panel a, relative to the outlet: x = outlet x + dx, drawn down from
+# outlet y + y1 to outlet y + y0, with its text text_dx to the left of it
 FLOW_ARROW = dict(dx=0.9, y0=0.55, y1=1.55, text_dx=0.17)
-LEADER_DIST = 0.22   # 标签中心离河段锚点超过这个距离就画引线 (原 0.30)
-BY_NUM = {v: k for k, v in serial.items()}   # (b)图编号 -> 河段索引
+LEADER_DIST = 0.22   # a label farther than this from its reach gets a leader line
+BY_NUM = {v: k for k, v in serial.items()}   # number in b -> reach index
 chainsA = reaches
 print(f'N={N} reaches={R} reach-levels={Lr}')
 
@@ -223,20 +221,16 @@ bX, bY = ring[:, 0], ring[:, 1]
 cmap = plt.get_cmap('Blues')   # b and c in light-to-mid blues by step order; d in one deeper blue
 CMAP_LO, CMAP_HI = 0.30, 0.80
 FAST_BLUE = '#08519c'
-# font sizes, one step above the paper1 defaults at the request of the 2026-11-23 review
+# font sizes: letters 11, titles 10.5, subtitles 10, labels and annotations 9
 FS_LETTER, FS_TITLE, FS_SUB, FS_ANN = 11.0, 10.5, 10.0, 9.0
 # the layout was designed on a 5.3 in canvas; it is scaled to the print width as a whole,
 # and the hand-placed schematic keeps its own margins, so the constrained layout is off
-H_TOP = 2.11 * PW / 5.3                       # the row a-d, unchanged
-# panel e (the change along one river) is now its own figure, fig_wave_attenuation.py;
-# FIG1_WITH_E=1 draws it under a-d again as before
-WITH_E = os.environ.get('FIG1_WITH_E', '0') == '1'
-H_E = 52.0 / 25.4 if WITH_E else 0.0           # panel e below it
-H_ALL = H_TOP + H_E
+H_TOP = 2.11 * PW / 5.3                       # the row a-d
+H_ALL = H_TOP
 fig = plt.figure(figsize=(PW, H_ALL), layout='none')
 gsp = fig.add_gridspec(1, 4, width_ratios=[1.12, 1, 1, 1], wspace=0.03,
-                       left=0.022, right=0.995, top=(H_E + 0.83 * H_TOP) / H_ALL,
-                       bottom=(H_E + 0.15 * H_TOP) / H_ALL)
+                       left=0.022, right=0.995, top=0.83 * H_TOP / H_ALL,
+                       bottom=0.15 * H_TOP / H_ALL)
 
 axa = fig.add_subplot(gsp[0])
 amax = accv[mb].max()
@@ -272,14 +266,14 @@ def reach_panel(ax, letter, title, sub_t, num_of, vmax, text_of=None, color=None
         ax.plot(pts[:,0], pts[:,1], color=col, lw=1.9, solid_capstyle='round', zorder=2)
     lines = np.vstack(allpts)
 
-    # LABEL_ADJUST (按b图编号) 翻译成河段索引
+    # LABEL_ADJUST, keyed by the numbers of b, turned into reach indices
     beside, nudge, head = {}, {}, []
     for num, adj in LABEL_ADJUST.items():
         i = BY_NUM[num]
         if adj[0] == 'beside':
             base = BY_NUM[adj[1]]
             beside[i] = (base, np.array([adj[2], adj[3]]))
-            head += [base, i]                       # 参照标签先放, 被钉标签跟上
+            head += [base, i]                       # the reference label first, the pinned one after it
         elif adj[0] == 'nudge':
             nudge[i] = np.array([adj[1], adj[2]])
     head = list(dict.fromkeys(head))
@@ -290,7 +284,7 @@ def reach_panel(ax, letter, title, sub_t, num_of, vmax, text_of=None, color=None
 
     def draw_label(i, q, col, pts):
         anchor = pts[len(pts)//2]
-        if np.hypot(q[0]-anchor[0], q[1]-anchor[1]) > LEADER_DIST:   # 离河段远时画引线
+        if np.hypot(q[0]-anchor[0], q[1]-anchor[1]) > LEADER_DIST:   # a leader line when the label sits far from its reach
             ax.plot([q[0], anchor[0]], [q[1], anchor[1]], color='#9aa0a6',
                     lw=0.55, zorder=3)
         ax.text(q[0], q[1], text_of(i) if text_of else str(num_of(i)), fontsize=FS_ANN,
@@ -298,8 +292,8 @@ def reach_panel(ax, letter, title, sub_t, num_of, vmax, text_of=None, color=None
                 bbox=dict(boxstyle='square,pad=0.16', fc='white', ec=col, lw=0.8))
 
     def auto_place(i, pts):
-        # 候选: 沿河段位置分数 frac 处, 法向偏移 0.17*sgn*s; 依次找第一个
-        # 既不与已放标签相撞 (间距阈值 0.40/0.28), 又不压河道线 (距离阈值 0.14) 的位置
+        # candidates at the fraction frac along the reach, offset 0.17*sgn*s across it; the first
+        # that clears the labels already placed (0.40 by 0.28) and the channel lines (0.14) wins
         sgn = 1 if i % 2 else -1
         q = None
         cands = [(f, s) for s in (1.0, -1.0, 1.7, -1.7, 2.4, -2.4, 3.2, -3.2)
@@ -345,7 +339,7 @@ reach_panel(axd, 'd', 'Fully parallel scheme\n(SURGE)',
             'All reaches at once\n($k$ sequential steps)', lambda i: 1, 1,
             text_of=lambda i: '$j$', color=FAST_BLUE)   # every reach in each iteration j = 1, ..., k (j as in the equations)
 
-allX = np.r_[X[rc], bX]; allY = np.r_[Y[rc], bY]   # 只按画出的河网+边界取画幅
+allX = np.r_[X[rc], bX]; allY = np.r_[Y[rc], bY]   # the extent of the drawn network and outline only
 # Every panel draws the network at one scale and over one vertical range, and every axes
 # box has the same top and the same height, so the outlets and the lines of text under the
 # networks line up across the row. With set_aspect('equal') each box would instead shrink
@@ -400,88 +394,8 @@ for ax, letter, title in TITLES:
         tt.set_position((over_px * 72.0 / fig.dpi, TITLE_TOP_PT))
 
 
-# the legend of a starts where the letter a and its title start
-_rA = fig.canvas.get_renderer()
-_xa_ = DRAW_LEFT[fig.axes[0]]   # the legend starts where the basin outline starts
 _lg = fig.axes[0].get_legend()
 _lg.set_bbox_to_anchor((0.0, 0.0), transform=fig.axes[0].transAxes)   # left of the basin, clear of its outline at the larger font
-if WITH_E:
-    # ---------------- panel e: a change entering one river, within one time step ----------------
-    # the implicit cell equation of section 2.1 on a chain of ten cells; Courant number 1 at a base
-    # flow of 100 m3/s, and the inflow at the upstream end rises to 200 m3/s in this time step
-    def _e_numbers(N=8, DT=4320.0, BETA=0.6, n=0.03, S0=1e-3, P=30.0, Q0=100.0, QIN=200.0, K=3):
-        ALPHA = (n * P ** (2 / 3) / np.sqrt(S0)) ** BETA
-        DX = DT / (ALPHA * BETA * Q0 ** (BETA - 1))
-        def solve(qin, qold):
-            rhs = DT / DX * qin + ALPHA * qold ** BETA
-            Q = np.maximum(qold, 1e-6)
-            for _ in range(30):
-                f = DT / DX * Q + ALPHA * Q ** BETA - rhs
-                Q = np.maximum(Q - f / (DT / DX + ALPHA * BETA * Q ** (BETA - 1)), 1e-6)
-            return Q
-        qold = np.full(N, Q0); serial = np.empty(N); up = QIN
-        for c in range(N):
-            serial[c] = solve(up, qold[c]); up = serial[c]
-        q = qold.copy(); left = []
-        for i in range(K):
-            q = solve(np.r_[QIN, q[:-1]], qold); left.append((serial - q) / (QIN - Q0))
-        assert min(l.min() for l in left) > -1e-9, 'SURGE above the serial solution somewhere'
-        return (serial - qold) / (QIN - Q0), left
-    change, left = _e_numbers()
-    NE = len(change); xe = np.arange(NE)
-    BLUE_E, RED_E, GREY_E, INK_E = '#2e79b8', '#C0392B', '#D5D8DC', '#333333'
-    xb0 = fig.axes[1].get_position().x0 + 0.01        # bars span the columns of b to d
-    xb1 = fig.axes[3].get_position().x1 - 0.005
-    top_e = (H_E - 9.0 / 25.4) / H_ALL                # below the title line of e
-    bot_e = 7.0 / 25.4 / H_ALL                        # room for Upstream / Downstream
-    E_ROWS = []
-    rows_e = [([('Serial scheme (panel ', 'normal'), ('b', 'bold'), (')', 'normal')], change, BLUE_E, None)] + \
-             [([('Fully parallel scheme (panel ', 'normal'), ('d', 'bold'), (') after iteration $i=%d$' % (i + 1), 'normal')], left[i], RED_E, change) for i in range(len(left))]
-    hrow = (top_e - bot_e) / len(rows_e)
-    for r, (lab, v, col, ghost) in enumerate(rows_e):
-        ax_ = fig.add_axes([xb0, top_e - (r + 1) * hrow + 0.004, xb1 - xb0, hrow - 0.008])
-        if ghost is not None:
-            ax_.bar(xe, ghost, width=0.56, color=GREY_E, lw=0, zorder=1)
-        ax_.bar(xe, np.where(v >= 0.005, v, 0), width=0.56, color=col, lw=0, zorder=2)
-        lab_at = range(4) if ghost is None else [int(np.argmax(v))]   # the halving shows in the first row
-        for j in lab_at:
-            ax_.text(j, v[j] + 0.03, '%.2f' % v[j], ha='center', va='bottom', fontsize=8, color=col, fontweight='bold')
-        ax_.axhline(0, color=INK_E, lw=0.8, zorder=3)
-        ax_.set_xlim(-0.6, NE - 0.4); ax_.set_ylim(0, 0.66); ax_.axis('off')
-        E_ROWS.append((ax_, lab))
-        if r == 0:                                     # labels on the data instead of a key
-            ax_.text(NE - 0.4, 0.08, 'Rise of the discharge in each cell,\nserial solution', fontsize=8, color=BLUE_E, ha='right', va='bottom', linespacing=1.1)
-        if r == 1:
-            ax_.text(NE - 0.4, 0.08, 'Serial solution minus the fully\nparallel scheme, in each cell', fontsize=8, color=RED_E, ha='right', va='bottom', linespacing=1.1)
-        if r == 2:
-            ax_.text(NE - 0.4, 0.08, 'Cells where the fully parallel\nscheme equals the serial solution', fontsize=8, color='#7f8790', ha='right', va='bottom', linespacing=1.1)
-        if r == len(rows_e) - 1:
-            ax_.text(-0.3, -0.08, 'Upstream', fontsize=8, color='#555', ha='left', va='top')
-            ax_.text(NE - 0.7, -0.08, 'Downstream', fontsize=8, color='#555', ha='right', va='top')
-    # letter e and its title start where the letter a starts
-    _ra = fig.canvas.get_renderer()
-    _la = [t for t in fig.axes[0].texts if t.get_text() == 'a'][0]
-    _x_a = fig.transFigure.inverted().transform((_la.get_window_extent(_ra).x0, 0))[0]
-    _le = fig.text(_x_a, (H_E - 4.5 / 25.4) / H_ALL, 'e', fontsize=10, fontweight='bold', va='baseline')
-    _w = fig.transFigure.inverted().transform((_le.get_window_extent(_ra).width, 0))[0] - fig.transFigure.inverted().transform((0, 0))[0]
-    fig.text(_x_a + _w + 1.2 / 25.4 / PW, (H_E - 4.5 / 25.4) / H_ALL,
-             'Change of the discharge along one river in one time step when the upstream inflow rises by 1', fontsize=9, va='baseline')
-    def _runs(x, y, parts):
-        # one label from several pieces, so the panel letters in it can be bold like the panel letters
-        t = None
-        for txt, wt in parts:
-            t = fig.text(x, y, txt, ha='left', va='bottom', fontsize=8, color=INK_E, fontweight=wt)
-            x = fig.transFigure.inverted().transform((t.get_window_extent(_ra).x1, 0))[0]
-        return t
-    _labs = [_runs(_x_a, _ax.get_position().y0, _lab) for _ax, _lab in E_ROWS]   # labels start at the letter e
-    # the bars start just after the longest label, so no gap is left between labels and bars
-    _inv = fig.transFigure.inverted()
-    _x_end = max(_inv.transform((t.get_window_extent(_ra).x1, 0))[0] for t in _labs)
-    _x0 = _x_end + 3.0 / 25.4 / PW
-    for _ax, _lab in E_ROWS:
-        _p = _ax.get_position()
-        _ax.set_position([_x0, _p.y0, xb1 - _x0, _p.height])
-import shutil
 _FIG = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'figures')
 # centre the drawing on the page: shift every axes and figure text so the blank margins on
 # the left and right of what is drawn are equal (the canvas width, and so the print size, stay)
@@ -505,8 +419,4 @@ _y1 = (_Hpx - _rows[0]) / fig.dpi + _pad
 _bb = Bbox([[0.0, max(_y0, 0.0)], [PW, min(_y1, H_ALL)]])
 fig.savefig(os.path.join(_FIG, 'fig_method.png'), dpi=600, bbox_inches=_bb)
 fig.savefig(os.path.join(_FIG, 'fig_method.pdf'), bbox_inches=_bb)
-_COPY_TO = os.environ.get('SURGE_FIGURE_COPY')      # optional second destination, e.g. a manuscript tree
-if _COPY_TO:
-    for _f in ('fig_method.png', 'fig_method.pdf'):
-        shutil.copy(os.path.join(_FIG, _f), os.path.join(_COPY_TO, _f))
 print('saved fig_method.png/pdf')

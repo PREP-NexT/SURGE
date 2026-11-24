@@ -1,7 +1,4 @@
-"""One timing protocol for every configuration of the paper (2026-09-14).
-
-The published timings came from several scripts with different forcings, starting states
-and repeat counts. This script replaces all of them with a single protocol:
+"""One timing protocol for every configuration of the paper:
 
   forcing     uniform runoff of RUNOFF_MMDAY, as lateral inflow per unit channel length
   state       the steady discharge field of that forcing, computed once per network by

@@ -1,7 +1,9 @@
-"""PyTorch (GPU / batched / differentiable) kinematic-wave routing for CWatM.
+"""SURGE kinematic-wave river routing in PyTorch, for any river network that drains
+downstream without loops.
 
-Two schemes replace the serial upstream-to-downstream traversal of t5.cpp. The
-paper calls them the partly parallel and the fully parallel scheme:
+Two schemes replace the serial upstream-to-downstream traversal of the implicit
+kinematic wave. The paper calls them the partially parallel and the fully parallel
+scheme:
 
 * ordered  : takes the topological levels in turn and computes every cell of a
   level at once, so it returns the serial solution (modulo fp sum order).
@@ -10,8 +12,9 @@ paper calls them the partly parallel and the fully parallel scheme:
   follow its Courant number, two on a 30 arc-minute network and thirty on a
   1 arc-minute one.
 
-Both share the same vectorised Newton solver (IterateToQnew in t5.cpp).
-All ops are differentiable -> autograd gives dQ/d(alpha, sideflow, ...).
+Both share one vectorised Newton solver for the cell equation that CWatM's serial
+kernel solves (IterateToQnew in t5.cpp). Inputs may carry a leading batch dimension,
+and every operation is differentiable, so reverse-mode autograd is available.
 """
 import numpy as np
 import torch
@@ -44,7 +47,7 @@ class TorchRouter:
     # blows up float32 gradients below ~1e-6; 1e-6 m3/s is physically zero.
     QFLOOR = 1e-6
 
-    def newton(self, qin, qold, q, alpha=None, n_iter=10, dx=None):
+    def newton(self, qin, qold, q, alpha=None, n_iter=4, dx=None):
         """Vectorised IterateToQnew (t5.cpp). Shapes broadcast over (B?, N)."""
         a = self.alpha if alpha is None else alpha
         beta, dt = self.beta, self.dt
@@ -62,8 +65,9 @@ class TorchRouter:
         return torch.where(zero, torch.zeros_like(qk), qk.clamp_min(0.0))
 
     # -------------------------------------------------------------- schemes
-    def substep_ordered(self, qold, q, alpha=None, n_newton=10):
-        """Exact level-scheduled substep. qold, q: (N,) or (B, N)."""
+    def substep_ordered(self, qold, q, alpha=None, n_newton=4):
+        """Level by level: the serial solution, up to the Newton steps and the order of
+        the sums. qold, q: (N,) or (B, N)."""
         qnew = torch.zeros_like(qold + q)
         for l in range(self.net.n_levels):
             c0, c1 = self.level_ptr[l], self.level_ptr[l + 1]
