@@ -47,7 +47,7 @@ This repository accompanies the manuscript:
 
 > Zhanwei Liu, Jiangchao Qiu, Peter Burek, Ming Pan, Kei Yoshimura, Hyungjun Kim
 > and Xiaogang He.
-> **SURGE: parallel kinematic wave river routing on GPUs** (in preparation).
+> **SURGE: GPU-parallel river routing with the implicit kinematic wave** (submitted).
 
 ---
 

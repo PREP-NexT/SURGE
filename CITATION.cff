@@ -22,7 +22,7 @@ keywords:
   - global hydrological model
 preferred-citation:
   type: article
-  title: "SURGE: parallel kinematic wave river routing on GPUs"
+  title: "SURGE: GPU-parallel river routing with the implicit kinematic wave"
   authors:
     - family-names: Liu
       given-names: Zhanwei

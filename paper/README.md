@@ -1,7 +1,7 @@
 # Paper figures
 
-Reproducible figures for the manuscript *"SURGE: parallel kinematic wave river routing
-on GPUs"*. Every figure is redrawn by one script that reads only the
+Reproducible figures for the manuscript *"SURGE: GPU-parallel river routing with the implicit
+kinematic wave"*. Every figure is redrawn by one script that reads only the
 compact data committed here, so no raw model output and no GPU is needed to
 reproduce them.
 

@@ -1,6 +1,6 @@
 """Figure 9 of the manuscript: the full GRanD dam set (7,320 dams, 6,501 to 7,270 reservoir cells).
 (a) wall-clock added by the dams to GPU-ordered and SURGE at 5, 3 and 1 arcmin, with and without
-the dams timed in the same job on one A100; (b) 1 - KGE at the 5th percentile against the iteration
+the dams timed in the same job on one A100; (b) the 95th percentile of 1 - KGE against the iteration
 count on the 5 arcmin network, with and without the dams.
 Data: figure_data/reservoir_timing.json, reservoir_convergence.json, reservoir_k7_scores.json."""
 import os, sys, json, numpy as np
@@ -56,7 +56,7 @@ ax1.grid(False, which='both')
 
 # (b) the criterion of section 4.1 with and without the dams, over the 2010 year
 CV = json.load(open(os.path.join(DATA, 'reservoir_convergence.json')))
-THRESH = 0.01                                  # 1 - KGE at the 5th percentile, the threshold
+THRESH = 0.01                                  # 95th percentile of 1 - KGE, the threshold
 for key, col, mk, lab, off, ha_ in (('without_dams', '0.5', 's--', 'SURGE without reservoirs', (-9, -31), 'right'),
                                     ('with_dams', '#0072B2', 'o-', 'SURGE with reservoirs',
                                      (-9, -17), 'right')):
@@ -94,7 +94,7 @@ for i, row in enumerate(_rows):
 print('table columns at', np.round(_xs, 3))
 ax2.set_yscale('log')
 ax2.set_xlabel('Parallel iterations $k$')
-ax2.set_ylabel('$1 - \\mathrm{KGE}$ at the 5th percentile')
+ax2.set_ylabel('95th percentile of $1 - \\mathrm{KGE}$')
 ax2.set_xticks([1, 3, 5, 7, 9, 11]); ax2.set_xlim(0.5, 12.5); ax2.set_ylim(2e-4, 1.0)
 panel_label(ax2, 'b', pad_pt=TPAD).set_fontsize(FS_LETTER); ax2.set_title('Reservoirs do not change convergence', loc='center', pad=TPAD)
 # each curve is named beside it by a leader, in place of a key
